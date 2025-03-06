@@ -15,6 +15,8 @@ const cronSchedule = async (client) => {
   });
 };
 
+// TO-DO 정리 필요
+
 /* // 웹훅
 const sendWebHookLolChess = async () => {
   const url =

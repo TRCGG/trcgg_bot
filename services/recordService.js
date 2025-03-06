@@ -13,7 +13,6 @@ const get_all_record_embed = async(msg, args) => {
   const [riot_name, riot_name_tag] = stringUtils.getMemberNick(msg, args);
   const guild_id = msg.guild.id;
   const embed = await recordClient.get_all_record(riot_name, riot_name_tag, guild_id);
-  console.log(embed);
   return stringUtils.createEmbed(embed);
 }
 
