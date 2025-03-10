@@ -29,20 +29,20 @@ const getMemberNick = (msg, args) => {
     if (msg.member.nickname !== undefined) {
       riot_name = msg.member.nickname;
       riot_name = riot_name.split("/")[0];
-      return riot_name.trim();
+      return [riot_name.trim(), null];
       // return [riot_name.replace(/\s/g, "").replace("й", "n").trim(), null]; //닉네임 마이그레이션 예정
     } else {
       throw new Error("별명 설정 필요");
     }
   } else {
-    riot_name = args.join(" ").replace(/\s/g, "");
-    if (checkTag(riot_name)) {
-      [riot_name, riot_name_tag] = riot_name.split("#");
+    const full_name = args.join(" ");
+    if (full_name.includes("#")) {
+      [riot_name, riot_name_tag] = full_name.split("#");
       riot_name = riot_name.replace(/\s/g, "").trim();
-      riot_name_tag = riot_name_tag.replace(/\s/g, "").trim();
+      riot_name_tag = riot_name_tag.trim();
       return [riot_name, riot_name_tag];
     } else {
-      return [riot_name.replace(/\s/g, "").trim(), null];
+      return [full_name.replace(/\s/g, "").trim(), null];
     }
   }
 };
@@ -64,16 +64,6 @@ const checkAuth = (msg) => {
   } else {
     return false;
   }
-};
-
-/**
- * @param {*} full_name 
- * @description 태그가 포함되어있는지만 확인
- * @returns 
- */
-const checkTag = (full_name) => {
-  const pattern = /^[가-힣a-zA-Z0-9]{1,16}#[가-힣a-zA-Z0-9]{1,16}$/;
-  return pattern.test(full_name);
 };
 
 /**
