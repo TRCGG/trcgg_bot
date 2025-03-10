@@ -34,7 +34,7 @@ for (const file of commandFiles) {
 console.log(client.commands.map(c => c.name).join(', ') + ' 명령어가 로드됨.')
 
 // event 로드
-const eventsPath = path.join(__dirname, 'app', 'commands');
+const eventsPath = path.join(__dirname, 'app', 'events');
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
 for (const file of eventFiles) {
