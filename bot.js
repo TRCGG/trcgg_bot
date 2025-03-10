@@ -21,11 +21,11 @@ const client = new Client({
 client.commands = new Collection();
 
 // command 로드
-const commandsPath  = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath ).filter(file => file.endsWith('.js'));
-console.log("로드된 파일들:", commandFiles);
+const foldersPath = path.join(__dirname, 'app', 'commands');
+const commandFiles = fs.readdirSync(foldersPath).filter(file => file.endsWith('.js'));
+
 for (const file of commandFiles) {
-	const filePath = path.join(commandsPath , file);
+    const filePath = path.join(foldersPath, file);
     const commands = require(filePath);
     commands.forEach(command => {
         client.commands.set(command.name, command);
@@ -34,7 +34,7 @@ for (const file of commandFiles) {
 console.log(client.commands.map(c => c.name).join(', ') + ' 명령어가 로드됨.')
 
 // event 로드
-const eventsPath = path.join(__dirname, 'events');
+const eventsPath = path.join(__dirname, 'app', 'commands');
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
 for (const file of eventFiles) {
