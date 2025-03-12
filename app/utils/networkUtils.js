@@ -48,8 +48,8 @@ const httpClient = {
    * @param {string} url - Request URL
    * @param {Object} options - fetch Setting
    */
-  async get(url, options= {}) {
-    return this.request('GET', url, options);
+  async get(url, data, options= {}) {
+    return this.request('GET', url, {...options, body: JSON.stringify(data)});
   },
 
   /**
@@ -77,8 +77,8 @@ const httpClient = {
    * @param {string} url - Request URL
    * @param {Object} options - fetch Setting
    */
-  async delete(url, options= {}) {
-    return this.request('DELETE', url, options);
+  async delete(url, data, options= {}) {
+    return this.request('DELETE', url, {...options, body: JSON.stringify(data)});
   }
 
 }

@@ -36,7 +36,7 @@ module.exports = [
 				msg.reply("권한 없음");
         return;
 			}
-			await commandUtils.execute(manageService, "put_subaccount", msg, args);
+			await commandUtils.execute(manageService, "delete_subaccount", msg, args);
     },
   },
   {

@@ -50,24 +50,6 @@ const post_subaccount = async(msg, args) => {
 }
 
 /**
- * @param {*} msg
- * @param {*} args sub_name#sub_name_tag
- * @description !부캐삭제
- * @returns {String} message
- */
-const put_subaccount = async(msg, args) => {
-	const raw_data = args.join(" ").trim();
-	const [ sub_name, sub_name_tag ] = stringUtils.splitTag(raw_data);
-	const data = {
-		sub_name : sub_name,
-		sub_name_tag : sub_name_tag
-	}
-	const guild_id = msg.guild.id;
-	const resultMessage = await managementClient.put_subaccount(data, guild_id);
-	return resultMessage;
-}
-
-/**
  * @param {*} delete_yn (Y/N) Y: 탈퇴 N: 복귀
  * @param {*} msg
  * @param {*} args riot_name#riot_name_tag
@@ -110,13 +92,31 @@ const put_accountname = async(msg, args) => {
 	return resultMessage;
 }
 
+/**
+ * @param {*} msg
+ * @param {*} args sub_name#sub_name_tag
+ * @description !부캐삭제
+ * @returns {String} message
+ */
+const delete_subaccount = async(msg, args) => {
+	const raw_data = args.join(" ").trim();
+	const [ sub_name, sub_name_tag ] = stringUtils.splitTag(raw_data);
+	const data = {
+		sub_name : sub_name,
+		sub_name_tag : sub_name_tag
+	}
+	const guild_id = msg.guild.id;
+	const resultMessage = await managementClient.delete_subaccount(data, guild_id);
+	return resultMessage;
+}
+
 module.exports = {
 	get_doc_embed,
 	get_sublist_embed,
 	post_subaccount,
-	put_subaccount,
 	put_accountstatus,
 	put_accountname,
+	delete_subaccount,
 }
 
 

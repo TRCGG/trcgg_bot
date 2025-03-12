@@ -39,18 +39,6 @@ const post_subaccount = async(data, guild_id) => {
 }
 
 /**
- * @param {String} data.sub_name 부캐 닉네임
- * @param {String} data.sub_name_tag 부캐 태그
- * @param {String} guild_id
- * @description !부캐삭제
- * @returns {String} message
- */
-const put_subaccount = async(data, guild_id) => {
-	const url = `${prefix}/subaccount/${guild_id}`;
-	return httpClient.put(url, data);
-}
-
-/**
  * @param {String} data.delete_yn (Y/N)
  * @param {String} data.riot_name 라이엇 닉네임 
  * @param {String} data.riot_name_tag 라이엇 태그
@@ -77,13 +65,25 @@ const put_accountname = async(data, guild_id) => {
 	return httpClient.put(url, data);
 }
 
+/**
+ * @param {String} data.sub_name 부캐 닉네임
+ * @param {String} data.sub_name_tag 부캐 태그
+ * @param {String} guild_id
+ * @description !부캐삭제
+ * @returns {String} message
+ */
+const delete_subaccount = async(data, guild_id) => {
+	const url = `${prefix}/subaccount/${guild_id}`;
+	return httpClient.delete(url, data);
+}
+
 module.exports = {
 	get_doc,
 	get_sublist,
 	post_subaccount,
-	put_subaccount,
 	put_accountstatus,
 	put_accountname,
+	delete_subaccount,
 }
 
 
