@@ -38,11 +38,11 @@ const getMemberNick = (msg, args) => {
     const full_name = args.join(" ");
     if (full_name.includes("#")) {
       [riot_name, riot_name_tag] = full_name.split("#");
-      riot_name = riot_name.replace(/\s/g, "").trim();
+      riot_name = riot_name.trim();
       riot_name_tag = riot_name_tag.trim();
       return [riot_name, riot_name_tag];
     } else {
-      return [full_name.replace(/\s/g, "").trim(), null];
+      return [full_name.trim(), null];
     }
   }
 };
