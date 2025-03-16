@@ -29,8 +29,12 @@ const getMemberNick = (msg, args) => {
     if (msg.member.nickname !== undefined) {
       riot_name = msg.member.nickname;
       riot_name = riot_name.split("/")[0];
-      return [riot_name.trim(), null];
-      // return [riot_name.replace(/\s/g, "").replace("й", "n").trim(), null]; //닉네임 마이그레이션 예정
+      riot_name_with_tag = riot_name.split("#");
+      if(riot_name_with_tag.length > 1) {
+        return [riot_name_with_tag[0].trim(), riot_name_with_tag[1].trim()];
+      } else {
+        return [riot_name_with_tag[0].trim(), null];
+      }
     } else {
       throw new Error("별명 설정 필요");
     }
