@@ -25,6 +25,7 @@ const createEmbed = (jsonData) => {
 const getMemberNick = (msg, args) => {
   let riot_name = null;
   let riot_name_tag = null;
+  let riot_name_with_tag = null;
   if (args[0] === undefined) {
     if (msg.member.nickname !== undefined) {
       riot_name = msg.member.nickname;
@@ -77,15 +78,15 @@ const checkAuth = (msg) => {
  */
 const splitDate = (date) => {
   if (!date) {
-      const now = new Date();
-      const year = now.getFullYear().toString();
-      const month = (now.getMonth() + 1).toString().padStart(2, '0');
-      return [year, month];
+    const now = new Date();
+    const year = now.getFullYear().toString();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    return [year, month];
   }
 
   if (typeof date !== 'string') {
-      console.error('유효하지 않은 입력 타입:', typeof date);
-      throw new Error("날짜 형식 오류");
+    console.error('유효하지 않은 입력 타입:', typeof date);
+    throw new Error("날짜 형식 오류");
   }
 
   const [year, month] = date.split('-');
@@ -151,12 +152,12 @@ const validateTag = (str) => {
   const pattern = /^[가-힣a-zA-Z0-9]{1,16}#[가-힣a-zA-Z0-9]{1,16}$/;
 
   if (!str) {
-      throw new Error("태그 문자열이 비어있습니다");
+    throw new Error("태그 문자열이 비어있습니다");
   }
 
   if (!pattern.test(str)) {
-      console.log("유효하지 않은 태그:", str);
-      throw new Error("잘못된 형식");
+    console.log("유효하지 않은 태그:", str);
+    throw new Error("잘못된 형식");
   }
 
   return true;

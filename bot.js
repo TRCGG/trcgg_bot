@@ -11,6 +11,7 @@ const path = require('node:path');
 const client = new Client({
     intents: [
 		GatewayIntentBits.DirectMessages,
+		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.Guilds,
 		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.MessageContent,

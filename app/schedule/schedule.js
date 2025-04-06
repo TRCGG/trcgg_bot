@@ -1,5 +1,8 @@
 const cron = require("node-cron");
+const TRC_GUILD_ID = process.env.TRC_GUILD_ID;
 const TRC_CHANNEL_ID = process.env.TRC_CHANNEL_ID;
+const TRC_ALARM_CHANNEL_ID = process.env.TRC_ALARM_CHANNEL_ID;
+const eventService = require("../services/eventService");
 
 /**
  * @todo TO-DO 동적 스케쥴 처리로 변경 필요
@@ -7,6 +10,11 @@ const TRC_CHANNEL_ID = process.env.TRC_CHANNEL_ID;
  * @description 디스코드 스케쥴
  */
 const cronSchedule = async (client) => {
+  sendMessage(client);
+  alarmEvent(client);
+};
+
+const sendMessage = async (client) => {
   cron.schedule("0 17 * * *", async () => {
     const channel = await client.channels.cache.get(TRC_CHANNEL_ID);
     if (channel) {
@@ -15,27 +23,19 @@ const cronSchedule = async (client) => {
   });
 };
 
-// TO-DO 정리 필요
 
-/* // 웹훅
-const sendWebHookLolChess = async () => {
-  const url =
-    "https://discord.com/api/webhooks/1315616035222589492/0Hi3t2hmXTPiQdfnaYOg2Ff1uDSDb6zZ3m84QVNdOLg4dCYDgLlyB3806QnId9I7nNxh?thread_id=1234521788432650261";
-  const message = {
-    content:
-      "```출석은 17:00부터 게임은 19:30 시작합니다. 시작 5분전에 대기해주세요.\n롤토체스 진행자는 첫 출석찍은 사람입니다. 막판과 대기자관리 부탁드립니다. ```",
-  };
-
-  cron.schedule("59 16 * * *", async () => {
-    try {
-      await axios.post(url, message);
-    } catch (e) {
-      console.error("Error sending message:", error);
-    }
-  });
-};
+/**
+ * @param {*} client 
+ * @description 매일 오전 8시 알람 Event 처리
  */
+const alarmEvent = async (client) => {
+  cron.schedule("0 8 * * *", async () => {
+    eventService.notify_alarm(client, TRC_ALARM_CHANNEL_ID, TRC_GUILD_ID).then((result) => {
+      console.log("알람 전송 완료");
+    });
+  });
+}
+
 module.exports = {
   cronSchedule,
-  // sendWebHookLolChess,
 };
