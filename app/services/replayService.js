@@ -1,4 +1,5 @@
 const replayClient = require('../client/replayClient');
+const stringUtils = require('../utils/stringUtils');
 
 /**
  * 리플레이 api call
@@ -30,7 +31,7 @@ const save = async(file_url, file_name, create_user, guild_id) => {
  */
 const delete_replay = async(msg, args) => {
 	const game_id = args.join(" ").trim();
-	const guild_id = msg.guild.id;
+	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
 	const resultMessage = await replayClient.delete_replay(game_id, guild_id);
 	return resultMessage;
 }

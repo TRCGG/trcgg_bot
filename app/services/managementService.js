@@ -21,7 +21,7 @@ const get_doc_embed = async() => {
  * @returns {Object} Embed 형식 Json
  */
 const get_sublist_embed = async(msg, args) => {
-	const guild_id = msg.guild.id;
+	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
 	const embed = await managementClient.get_sublist(guild_id);
 	return stringUtils.createEmbed(embed);
 }
@@ -43,7 +43,7 @@ const post_subaccount = async(msg, args) => {
 		main_name : main_name,
 		main_name_tag : main_name_tag	
 	}
-	const guild_id = msg.guild.id;
+	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
 
 	const resultMessage = await managementClient.post_subaccount(data, guild_id);
 	return resultMessage;
@@ -64,7 +64,7 @@ const put_accountstatus = async(delete_yn, msg, args) => {
 		riot_name : riot_name,
 		riot_name_tag : riot_name_tag
 	}
-	const guild_id = msg.guild.id;
+	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
 
 	const resultMessage = await managementClient.put_accountstatus(data, guild_id);
 	return resultMessage;
@@ -87,7 +87,7 @@ const put_accountname = async(msg, args) => {
 		new_name : new_name,
 		new_name_tag : new_name_tag	
 	}
-	const guild_id = msg.guild.id;
+	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
 	const resultMessage = await managementClient.put_accountname(data, guild_id);
 	return resultMessage;
 }
@@ -105,7 +105,7 @@ const delete_subaccount = async(msg, args) => {
 		sub_name : sub_name,
 		sub_name_tag : sub_name_tag
 	}
-	const guild_id = msg.guild.id;
+	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
 	const resultMessage = await managementClient.delete_subaccount(data, guild_id);
 	return resultMessage;
 }

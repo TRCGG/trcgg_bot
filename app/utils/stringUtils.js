@@ -163,6 +163,19 @@ const validateTag = (str) => {
   return true;
 };
 
+/**
+ * @param {String} guild_id
+ * @description 길드 ID Base64 인코딩
+ */
+const encodeGuildId = (guild_id) => {
+  if (!guild_id) {
+    throw new Error("길드 ID가 비어있습니다");
+  }
+
+  const encodedId = Buffer.from(guild_id.toString(), 'utf8').toString('base64');
+  return encodedId;
+}
+
 module.exports = {
   createEmbed,
   getMemberNick,
@@ -171,4 +184,5 @@ module.exports = {
   splitStr,
   splitTag,
   validateTag,
+  encodeGuildId,
 };

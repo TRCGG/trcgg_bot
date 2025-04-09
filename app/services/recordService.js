@@ -11,7 +11,7 @@ const stringUtils = require('../utils/stringUtils');
  */
 const get_all_record_embed = async(msg, args) => {
   const [riot_name, riot_name_tag] = stringUtils.getMemberNick(msg, args);
-  const guild_id = msg.guild.id;
+  const guild_id = stringUtils.encodeGuildId(msg.guild.id);
   const embed = await recordClient.get_all_record(riot_name, riot_name_tag, guild_id);
   return stringUtils.createEmbed(embed);
 }
@@ -23,7 +23,7 @@ const get_all_record_embed = async(msg, args) => {
  */ 
 const get_recent_record_embed = async(msg, args) => {
   const [riot_name, riot_name_tag] = stringUtils.getMemberNick(msg, args);
-  const guild_id = msg.guild.id;
+  const guild_id = stringUtils.encodeGuildId(msg.guild.id);
   const embed = await recordClient.get_recent_record(riot_name, riot_name_tag, guild_id);
   return stringUtils.createEmbed(embed);
 }
@@ -36,7 +36,7 @@ const get_recent_record_embed = async(msg, args) => {
  */
 const get_master_record_embed = async(msg, args) => {
   const champ_name = args.join(" ").replace(/\s/g, "").trim();
-  const guild_id = msg.guild.id;
+  const guild_id = stringUtils.encodeGuildId(msg.guild.id);
   const embed = await recordClient.get_master_record(champ_name, guild_id);
   return stringUtils.createEmbed(embed);
 }
@@ -49,7 +49,7 @@ const get_master_record_embed = async(msg, args) => {
  */
 const get_champstat_record_embed = async(msg, args) => {
   const [ year, month ] = stringUtils.splitDate(args);
-  const guild_id = msg.guild.id;
+  const guild_id = stringUtils.encodeGuildId(msg.guild.id);
   const embed = await recordClient.get_champstat_record(year, month, guild_id);
   return stringUtils.createEmbed(embed)
 }
@@ -62,7 +62,7 @@ const get_champstat_record_embed = async(msg, args) => {
  */
 const get_gamestat_record_embed = async(msg, args) => {
   const [ year, month ] = stringUtils.splitDate(args);
-  const guild_id = msg.guild.id;
+  const guild_id = stringUtils.encodeGuildId(msg.guild.id);
   const embed = await recordClient.get_gamestat_record(year, month, guild_id);
   return stringUtils.createEmbed(embed);
 }
@@ -75,7 +75,7 @@ const get_gamestat_record_embed = async(msg, args) => {
  */
 const get_linestat_record_embed = async(msg, args) => {
   const position = args.join(" ").replace(/\s/g, "").trim();
-  const guild_id = msg.guild.id;
+  const guild_id = stringUtils.encodeGuildId(msg.guild.id);
   const embed = await recordClient.get_linestat_record(position, guild_id);
   return stringUtils.createEmbed(embed)
 }
@@ -88,7 +88,7 @@ const get_linestat_record_embed = async(msg, args) => {
  */
 const get_result_record_embed = async(msg, args) => {
   const game_id = args.join(" ");
-  const guild_id = msg.guild.id;
+  const guild_id = stringUtils.encodeGuildId(msg.guild.id);
   const embed = await recordClient.get_result_record(game_id, guild_id);
   return stringUtils.createEmbed(embed);
 }
@@ -102,7 +102,7 @@ const get_result_record_embed = async(msg, args) => {
 const get_clanstat_record_embed = async(msg, args) => {
   const date = args.join(" ");
   const [ year, month ] = stringUtils.splitDate(date);
-  const guild_id = msg.guild.id;
+  const guild_id = stringUtils.encodeGuildId(msg.guild.id);
   const str = await recordClient.get_clanstat_record(year, month, guild_id);
 
   const rows = str.split('\n');
