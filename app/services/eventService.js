@@ -54,7 +54,7 @@ const notify_alarm = async(client, channel_id, guild_id) => {
 	const channel = await guild.channels.fetch(channel_id);
 	if (!channel) return null;
 
-	const alarms = await get_alarm_list(guild_id);
+	const alarms = await get_alarm_list(stringUtils.encodeGuildId(guild_id));
 
 	if(alarms.alarmGames) {
 		await Promise.all(
