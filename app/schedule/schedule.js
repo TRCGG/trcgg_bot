@@ -31,7 +31,7 @@ const sendMessage = async (client) => {
 const alarmEvent = async (client) => {
   cron.schedule("0 8 * * *", async () => {
     eventService.notify_alarm(client, TRC_ALARM_CHANNEL_ID, TRC_GUILD_ID).then((result) => {
-      console.log("알람 전송 완료");
+      console.log("알람 전송 완료", result);
     });
   });
 }

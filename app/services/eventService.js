@@ -19,10 +19,12 @@ const get_alarm_list = async(guild_id) => {
 /**
  * @param {*} name 
  * @param {*} guild 
+ * @description 멤버 닉네임으로 멤버 찾기
  * @returns 
  */
 const find_member_by_ninkname = async(name, guild) => {
-	name = name.replace('/s+/g', '').trim();
+	const origin_name = name;
+	name = name.replace('/s+/g', '').toLowerCase();
 	try {
 		if (!guild) {
 			return null;
@@ -32,9 +34,10 @@ const find_member_by_ninkname = async(name, guild) => {
 		
 		// 멤버 찾기
 		const member = members.find(m => 
-			m.nickname?.replace(/\s+/g, '').startsWith(name) || m.user.username?.replace(/\s+/g, '').startsWith(name)
+			console.log(m.nickname, m.user.username) ||
+			m.nickname?.replace(/\s+/g, '').toLowerCase().startsWith(name) || m.user.username?.replace(/\s+/g, '').toLowerCase().startsWith(name)
 		);
-		return member;
+		return member || origin_name;
 
 	} catch (error) {
 		console.error('Error fetching member:', error);
@@ -77,18 +80,28 @@ const notify_alarm = async(client, channel_id, guild_id) => {
 			})
 		);
 	}
+	return alarms;
 }
 
 const game_message = (member) => {
-	const message = `:tada:게임 승리 달성:tada:\n<@${member.id}>님이 내전 150판을 달성하였습니다!!\n이에 내전의신 역할을 부여합니다:bangbang:박수우우우우우:clap::clap::clap::clap:`;
-	return message;
-}
+  const id = typeof member === 'string' ? member : member.id;
+  return `
+    :tada:게임 승리 달성:tada:
+    <@${id}>님이 내전 150판을 달성하였습니다!!
+    이에 내전의신 역할을 부여합니다:bangbang:
+    박수우우우우우 :clap::clap::clap::clap:
+  `
+};
 
 const win_message = (member) => {
-	const message = `:tada:승리의MVP 달성:tada:\n<@${member.id}>님이 내전 50승을 달성하였습니다!!\n이에 승리의MVP 역할을 부여합니다:bangbang:박수우우우우우:clap::clap::clap::clap:`;
-	return message;
-}
-
+  const id = typeof member === 'string' ? member : member.id;
+  return `
+    :tada:승리의MVP 달성:tada:
+    <@${id}>님이 내전 50승을 달성하였습니다!! 
+    이에 승리의MVP 역할을 부여합니다:bangbang:
+    박수우우우우우 :clap::clap::clap::clap:
+  `
+};
 module.exports = {
 	notify_alarm,
 }
