@@ -34,7 +34,6 @@ const find_member_by_ninkname = async(name, guild) => {
 		
 		// 멤버 찾기
 		const member = members.find(m => 
-			console.log(m.nickname, m.user.username) ||
 			m.nickname?.replace(/\s+/g, '').toLowerCase().startsWith(name) || m.user.username?.replace(/\s+/g, '').toLowerCase().startsWith(name)
 		);
 		return member || origin_name;
