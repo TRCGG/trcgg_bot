@@ -1,4 +1,5 @@
 const commandUtils = require("../utils/commandUtilis");
+const stringUtils = require("../utils/stringUtils");
 const guildService = require("../services/guildService");
 const selectBoxUtils = require("../utils/selectBoxUtils");
 const ADMIN_ID = process.env.ADMIN_ID;
@@ -34,6 +35,10 @@ module.exports = [
     name:"lan",
     description: "길드 언어 설정",
     run: async (client, msg, args) => {
+      if(!stringUtils.checkAuth(msg)) {
+        msg.reply("권한 없음");
+        return;
+      }
       await commandUtils.exec(selectBoxUtils, "lang_box_message", client, msg, args);
     },
   }
