@@ -109,15 +109,13 @@ const splitDate = (date) => {
  */
 const splitStr = (str) => {
   if (!str) {
-    console.log("입력된 문자열이 비어있습니다");
-    throw new Error("잘못된 형식");
+    throw new Error("입력된 문자열이 비어있습니다");
   }
 
   const [sub_name, main_name] = str.split('/');
 
   if (!sub_name || !main_name) {
-    console.log("잘못된 형식의 문자열:", str);
-    throw new Error("잘못된 형식");
+    throw new Error("잘못된 형식 !doc를 참고해주세요");
   }
   return [sub_name, main_name];
 };
@@ -129,15 +127,13 @@ const splitStr = (str) => {
 */
 const splitTag = (str) => {
   if (!str) {
-    console.log("입력된 태그가 비어있습니다");
-    throw new Error("잘못된 형식");
+    throw new Error("입력값이 비어있습니다");
   }
-
   const [name, name_tag] = str.split('#');
 
   if (!name || !name_tag) {
     console.log("잘못된 태그 형식:", str);
-    throw new Error("잘못된 형식");
+    throw new Error("닉네임#태그 값을 입력해주세요");
   }
 
   return [name, name_tag];
@@ -157,7 +153,7 @@ const validateTag = (str) => {
 
   if (!pattern.test(str)) {
     console.log("유효하지 않은 태그:", str);
-    throw new Error("잘못된 형식");
+    throw new Error("유요하지 않은 태그");
   }
 
   return true;

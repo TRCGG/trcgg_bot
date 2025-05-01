@@ -26,13 +26,17 @@ module.exports = {
         : fileName;
 
       if (fileNameCheck(fileName)) {
-        result = await replayService.save(
-          fileUrl,
-          fileNameWithoutExt,
-          createUser,
-          guildId
-        );
-        msg.reply(result);
+        try {
+          result = await replayService.save(
+            fileUrl,
+            fileNameWithoutExt,
+            createUser,
+            guildId
+          );
+          msg.reply(result);
+        } catch (error) {
+          msg.reply(error.message);
+        }
       } else {
         msg.reply(
           `:red_circle:등록실패: ${fileNameWithoutExt} 잘못된 리플 파일 형식`

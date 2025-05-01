@@ -42,9 +42,21 @@ for (const file of eventFiles) {
 	const filePath = path.join(eventsPath, file);
 	const event = require(filePath);
 	if (event.once) {
-		client.once(event.name, (...args) => event.execute(client, ...args));
+		client.once(event.name, async(...args) => {
+			try {
+				await event.execute(client, ...args);
+			} catch (error) {
+				console.error(`[${new Date().toISOString()}] Error:`, error.message);
+			}
+		})
 	} else {
-		client.on(event.name, (...args) => event.execute(client, ...args));
+		client.on(event.name, async(...args) => {
+			try {
+				await event.execute(client, ...args);
+			} catch (error) {
+				console.error(`[${new Date().toISOString()}] Error:`, error.message);
+			}
+		})
 	}
 }
   

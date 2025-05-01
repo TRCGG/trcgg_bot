@@ -16,29 +16,37 @@ const httpClient = {
     }
 
     const fullUrl = `${BaseURL}${url}`
+    const cleanUrl = fullUrl.replace(/\\/g, '');
  
     try {
-      const response = await fetch(fullUrl, config);
+      const response = await fetch(cleanUrl, config);
       clearTimeout(timeoutId); 
       
-      // status 200 아닌 에러
-      if(!response.ok) {
-        const errorData = await response.json().catch(() => ({})); //JSON 파싱 실패 방지
-        console.error('Response Error:', {
-          status: response.status,
-          data: JSON.stringify(errorData)
-        })
-        throw new Error(`HTTP Error ${response.status}: ${JSON.stringify(errorData)}`);
-      }
-      return await response.json();
+      // 응답 코드가 200이 아닐 경우
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({})); // JSON 파싱 실패 방지
+        const message = errorData?.message || 'Unknown error';
 
+        console.error('Response Error:', {
+          time: new Date().toISOString(),
+          url: cleanUrl,
+          status: response.status,
+          data: errorData
+        });
+
+        if (response.status === 404) {
+          throw new Error('404 Not Found: ' + message);
+        }
+
+        throw new Error(message);
+      }
+      const json = await response.json();
+      return json.data;
     } catch (error) {
       clearTimeout(timeoutId);
       if(error.name === 'AbortError'){
         console.error('요청 시간 초과');
-      } else {
-        console.error('Error:', error.message);
-      }
+      } 
       throw error;
     }
   },
