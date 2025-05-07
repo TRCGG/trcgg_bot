@@ -1,5 +1,6 @@
 const { Events } = require("discord.js");
 const replayService = require("../services/replayService");
+const championShipService = require("../services/championShipService");
 const stringUtils = require("../utils/stringUtils");
 
 /**
@@ -25,13 +26,33 @@ module.exports = {
         ? fileName.slice(0, -5)
         : fileName;
 
+      // 대회 리플 파일인지 일반 리플 파일인지 구분
+      if (championShipCheck(fileName)) {
+        try {
+          result = await championShipService.save(
+            fileUrl,
+            fileNameWithoutExt,
+            createUser,
+            guildId,
+            2
+          );
+          msg.reply(result);
+          return;
+        } catch (error) {
+          msg.reply(error.message);
+          return;
+        }
+      } 
+
+      // 일반 리플 파일인 경우
       if (fileNameCheck(fileName)) {
         try {
           result = await replayService.save(
             fileUrl,
             fileNameWithoutExt,
             createUser,
-            guildId
+            guildId,
+            1
           );
           msg.reply(result);
         } catch (error) {
@@ -64,5 +85,10 @@ module.exports = {
 const fileNameCheck = (fileName) => {
   const regex = new RegExp(/^[a-zA-Z0-9]*_\d{4}_\d{4}\.rofl$/);
   return regex.test(fileName);
-  s;
 };
+
+// 대회 리플 파일 정규식 검사
+const championShipCheck = (fileName) => {
+  const regex = new RegExp(/^[a-zA-Z0-9]*_\d{4}_\d{4}_champs\.rofl$/);
+  return regex.test(fileName);
+}
