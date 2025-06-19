@@ -10,9 +10,9 @@
   "license": "ISC",
   "description": ".env 파일 생성 후 아래 내용 추가",
   "dependencies": {
+    "csv-writer": "^1.6.0",
     "discord.js": "^14.18.0",
     "dotenv": "^16.4.7",
     "node-cron": "^3.0.3"
-  },
-  "devDependencies": {}
+  }
 }

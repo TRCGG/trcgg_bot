@@ -1,5 +1,8 @@
 const guildClient = require('../client/guildClient');
 const stringUtils = require('../utils/stringUtils');
+const { AttachmentBuilder } = require('discord.js');
+const fs = require('fs');
+const { createObjectCsvStringifier } = require('csv-writer');
 /**
  * 길드 관련 api call service
  */
@@ -107,8 +110,63 @@ const delete_guild = async (client, msg, args) => {
 	}
 }
 
+/**
+ * @param {*} client
+ * @param {*} msg
+ * @param {*} args
+ * @description 길드 멤버 목록을 액셀 파일로 보여줍니다.
+ */
+const show_guild_member_list = async (client, msg, args) => {
+	const guild = msg.guild;
+
+	await guild.members.fetch(); // 모든 멤버 캐싱
+
+	const members = guild.members.cache.filter(member => !member.user.bot);
+
+	const csvStringifier  = createObjectCsvStringifier ({
+		path: 'members.csv',
+		header: [
+			{ id: 'username', title: 'Username' },
+			// { id: 'tag', title: 'Tag' },
+			// { id: 'id', title: 'User ID' },
+			{ id: 'nickname', title: 'Nickname' },
+      { id: 'joinedAt', title: '가입일' }
+		]
+	});
+
+	const records = members.map(member => {
+		const joinedAtKST = member.joinedAt
+			? new Date(member.joinedAt.getTime() + 9 * 60 * 60 * 1000) // UTC → KST
+					.toISOString()
+					.replace('T', ' ')
+					.slice(0, 19)
+			: '';
+
+		return {
+			username: member.user.username,
+			// tag: member.user.tag,
+			// id: member.user.id,
+			nickname: member.displayName || '',
+			joinedAt: joinedAtKST
+		};
+	});
+	const csvContent = '\uFEFF' + csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(records);
+
+	// Buffer로 만들기
+	const buffer = Buffer.from(csvContent, 'utf8');
+
+	// AttachmentBuilder에 바로 넣기
+	const attachment = new AttachmentBuilder(buffer, { name: 'members.csv' });
+	await msg.channel.send({
+		content: `멤버 목록 (${records.length}명):`,
+		files: [attachment]
+	});
+
+}
+
 module.exports = {
 	show_and_insert_guild_list,
+	show_guild_member_list,
 	post_guild,
 	put_guild_lang,
 	delete_guild,

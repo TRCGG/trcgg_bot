@@ -41,5 +41,16 @@ module.exports = [
       }
       await commandUtils.exec(selectBoxUtils, "lang_box_message", client, msg, args);
     },
+  },
+  {
+    name: "클랜원목록",
+    description: "액셀파일로 길드원 목록을 보여줍니다.",
+    run: async (client, msg, args) => {
+      if(!stringUtils.checkAuth(msg)) {
+        msg.reply("권한 없음");
+        return;
+      }
+      await commandUtils.exec(guildService, "show_guild_member_list", client, msg, args);
+    },
   }
 ];
