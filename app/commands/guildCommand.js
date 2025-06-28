@@ -11,7 +11,7 @@ const ADMIN_ID = process.env.ADMIN_ID;
 module.exports = [
   {
     name: "길드목록",
-  description: "길드 관련 명령어",
+    description: "길드 관련 명령어",
     run: async (client, msg, args) => {
       if(!msg.author.id === ADMIN_ID) {
         msg.reply("권한 없음");

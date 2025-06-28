@@ -1,3 +1,4 @@
 /.env
 /node_modules
 /deploy
+/app/data/logChannels.json

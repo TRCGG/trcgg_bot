@@ -1,6 +1,7 @@
 const { Events } = require("discord.js");
 const guildService = require("../services/guildService");
 const selectBoxUtils = require("../utils/selectBoxUtils");
+const handleInhouseInteraction = require('../utils/inhouseUtils');
 
 /**
  * interactionCreate 이벤트 핸들러
@@ -10,6 +11,7 @@ module.exports = {
 	name: Events.InteractionCreate,
 	once: false,
 	async execute(client, interaction) {
+		if (await handleInhouseInteraction(interaction)) return;
 		if (!interaction.isStringSelectMenu()) return;
 		if (interaction.customId === "select_language") {
 			const selected = interaction.values[0]; // 선택한 값
