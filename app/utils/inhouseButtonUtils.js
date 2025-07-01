@@ -19,11 +19,6 @@ function createInhouseButtons({undoEnabled = false} = {}) {
       .setLabel('❌ 본인 취소')
       .setStyle(ButtonStyle.Danger),
 
-    // new ButtonBuilder()
-    //   .setCustomId('inhouse_clear')
-    //   .setLabel('🧹 명단 초기화')
-    //   .setStyle(ButtonStyle.Secondary),
-
     new ButtonBuilder()
       .setCustomId('mention_range')
       .setLabel('💬 대기자호출')

@@ -97,8 +97,8 @@ function buildSignupEmbed(guildId) {
  * @description 타임스탬프를 한국 시간으로 포맷합니다.
  * @returns
  */
-function formatTimestamp() {
-  const timeStr = new Date().toLocaleTimeString("ko-KR", {
+function formatTimestamp(timestamp = Date.now()) {
+  const timeStr = new Date(timestamp).toLocaleTimeString("ko-KR", {
     hour: "2-digit",
     minute: "2-digit",
   });

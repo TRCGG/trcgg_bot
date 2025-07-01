@@ -10,7 +10,6 @@ const {
 const {
   addApplicant,
   removeApplicant,
-  clearApplicants,
   getApplicants,
   buildSignupEmbed,
   backupApplicants,
@@ -53,18 +52,6 @@ module.exports = async function handleInhouseInteraction(interaction) {
           interaction,
           `**${displayName}** 내전신청 취소`
         );
-      } else if (interaction.customId === "inhouse_clear") {
-        backupApplicants(guildId); // 신청자 명단 백업
-        clearApplicants(guildId);
-        const embed = buildSignupEmbed(guildId);
-        const buttons = createInhouseButtons({ undoEnabled: true });
-        await interaction.update({ embeds: [embed], components: [buttons] });
-
-        // 로그 전송
-        // await sendInhouseLog(
-        //   interaction,
-        //   `🗑️ **${displayName}** 님이 내전 신청자 명단을 초기화`
-        // );
       } else if (interaction.customId === "mention_range") {
         // 멘션 범위 입력 모달 띄우기
         const modal = new ModalBuilder()
@@ -179,10 +166,6 @@ module.exports = async function handleInhouseInteraction(interaction) {
 
         await interaction.update({ embeds: [embed], components: [buttons] });
 
-        // await interaction.reply({
-        //   content: `${displayName} 💬호출: ${mentionStr}`,
-        //   flags: MessageFlags.Ephemeral,
-        // });
       } else if (interaction.customId === "cancel_range_modal") {
         const inputStr = interaction.fields.getTextInputValue("cancel_input");
 
@@ -256,12 +239,3 @@ module.exports = async function handleInhouseInteraction(interaction) {
     }
   }
 };
-
-/**
- * @description 매일 오전 10시에 길드 전체 신청자 메모리 초기화
- */
-cron.schedule('02 18 * * *', () => {
-  console.log(`[inhouse] 오전 10시 - 전체 신청자 초기화`);
-  inhouseClear(); // 모든 길드 신청자 메모리 초기화
-
-});
