@@ -83,8 +83,9 @@ function buildSignupEmbed(guildId) {
     embed.setDescription("아직 신청한 인원이 없습니다.");
   } else {
     const lines = applicants.map((a, i) => {
+      const nickname = a.nickname || a.username;
       const time = formatTimestamp(a.timestamp);
-      return `\`${i + 1}.\` <@${a.userId}> (${time})`;
+      return `\`${i + 1}.\` ${nickname} <@${a.userId}> (${time})`;
     });
     embed.setDescription(lines.join("\n"));
   }
