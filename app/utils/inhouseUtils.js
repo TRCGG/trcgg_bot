@@ -73,13 +73,13 @@ module.exports = async function handleInhouseInteraction(interaction) {
         // 취소 범위 입력 모달 띄우기
         const modal = new ModalBuilder()
           .setCustomId("cancel_range_modal")
-          .setTitle("취소할 인원 번호 입력");
+          .setTitle("대기자 정리 인원 번호 입력");
 
         const input = new TextInputBuilder()
           .setCustomId("cancel_input")
-          .setLabel("취소할 번호 범위 또는 단일 번호 (예: 1~3)")
+          .setLabel("대기자 정리 할 번호 입력 (예: 1~3 / 2 / 1,3)")
           .setStyle(TextInputStyle.Short)
-          .setPlaceholder("1~3 또는 3")
+          .setPlaceholder("1~3 또는 3 또는 1,3")
           .setRequired(true);
 
         const row = new ActionRowBuilder().addComponents(input);
@@ -168,33 +168,17 @@ module.exports = async function handleInhouseInteraction(interaction) {
 
       } else if (interaction.customId === "cancel_range_modal") {
         const inputStr = interaction.fields.getTextInputValue("cancel_input");
+        const indices = parseIndices(inputStr, applicants.length);
 
-        let indices = [];
-
-        const rangeMatch = inputStr.match(/^(\d+)\s*~\s*(\d+)$/);
-        if (rangeMatch) {
-          let start = parseInt(rangeMatch[1], 10);
-          let end = parseInt(rangeMatch[2], 10);
-          if (start < 1 || end > applicants.length || start > end) {
-            return interaction.reply({
-              content: "잘못된 범위입니다.",
-              flags: MessageFlags.Ephemeral,
-            });
-          }
-          for (let i = start; i <= end; i++) indices.push(i - 1);
-        } else {
-          const num = parseInt(inputStr, 10);
-          if (isNaN(num) || num < 1 || num > applicants.length) {
-            return interaction.reply({
-              content: "잘못된 번호입니다.",
-              flags: MessageFlags.Ephemeral,
-            });
-          }
-          indices = [num - 1];
+        if (indices.length === 0) {
+          return interaction.reply({
+            content: "유효한 번호가 없습니다.",
+            flags: MessageFlags.Ephemeral,
+          });
         }
 
         const toRemove = indices
-          .map((i) => applicants[i]?.userId)
+          .map(i => applicants[i]?.userId)
           .filter(Boolean);
 
         if (toRemove.length === 0) {
@@ -206,17 +190,14 @@ module.exports = async function handleInhouseInteraction(interaction) {
 
         // 제거 대상 목록
         const removedUsers = indices
-          .map((i) => applicants[i])
+          .map(i => applicants[i])
           .filter(Boolean)
-          .map((applicant) => {
-            return applicant.nickname || `<@${applicant.userId}>`;
-          });
+          .map(applicant => applicant.nickname || `<@${applicant.userId}>`);
 
         const nameStr = removedUsers.join(", ");
 
         backupApplicants(guildId); // 신청자 명단 백업
-
-        toRemove.forEach((userId) => removeApplicant(guildId, userId));
+        toRemove.forEach(userId => removeApplicant(guildId, userId));
 
         const embed = buildSignupEmbed(guildId);
         const buttons = createInhouseButtons({ undoEnabled: true });
@@ -239,3 +220,32 @@ module.exports = async function handleInhouseInteraction(interaction) {
     }
   }
 };
+
+/*
+  * @description 입력된 문자열에서 인덱스를 파싱합니다.
+  * @param {string} input - 입력 문자열 (예: "1~3, 5, 7")
+  * @param {number} max - 최대 인덱스 (1부터 시작)
+  * @returns {number[]} - 유효한 인덱스 배열 (내림차순 정렬)
+  */
+function parseIndices(input, max) {
+  const indices = new Set();
+
+  input.split(',').forEach(part => {
+    part = part.trim();
+    if (!part) return;
+
+    if (part.includes('~')) {
+      const [start, end] = part.split('~').map(n => parseInt(n.trim(), 10));
+      if (isNaN(start) || isNaN(end)) return;
+      const validStart = Math.max(1, start);
+      const validEnd = Math.min(max, end);
+      if (validStart > validEnd) return;
+      for (let i = validStart; i <= validEnd; i++) indices.add(i - 1);
+    } else {
+      const num = parseInt(part, 10);
+      if (!isNaN(num) && num >= 1 && num <= max) indices.add(num - 1);
+    }
+  });
+
+  return [...indices].sort((a, b) => b - a); // 내림차순
+}
