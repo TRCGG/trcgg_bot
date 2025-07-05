@@ -30,10 +30,15 @@ function createInhouseButtons({undoEnabled = false} = {}) {
       .setStyle(ButtonStyle.Danger),
 
     new ButtonBuilder()
-      .setCustomId('inhouse_undo')
-      .setLabel('↩ 되돌리기')
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled(!undoEnabled) // Undo 버튼 활성화 여부 설정
+      .setCustomId('inhouse_priority')
+      .setLabel('⭐ 우선예약')
+      .setStyle(ButtonStyle.Primary),
+
+    // new ButtonBuilder()
+    //   .setCustomId('inhouse_undo')
+    //   .setLabel('↩ 되돌리기')
+    //   .setStyle(ButtonStyle.Secondary)
+    //   .setDisabled(!undoEnabled) // Undo 버튼 활성화 여부 설정
 
   );
 }

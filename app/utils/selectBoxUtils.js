@@ -1,4 +1,5 @@
 const { ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
+const guildService = require('../services/guildService');	
 
 /**
  * select box utils
@@ -59,7 +60,36 @@ const disabled_message = async (interaction) => {
 	return sendMessage;
 }
 
+/**
+ * ✅ 셀렉트 메뉴 핸들러
+ * @param {*} interaction 
+ * @returns {boolean} 처리했으면 true, 아니면 false
+ */
+const handleSelectMenuInteraction = async (interaction) => {
+  if (!interaction.isStringSelectMenu()) return false;
+
+  if (interaction.customId === "select_language") {
+    const selected = interaction.values[0]; // "ko" or "en"
+    const guildId = interaction.guild.id;
+
+    // DB 반영
+    const result = await guildService.put_guild_lang(selected, guildId);
+
+    // 응답 메시지 전송
+    await interaction.reply({
+      content: result || "✅ 언어 설정 완료!",
+      ephemeral: true,
+    });
+
+    // UI 비활성화
+    await disabled_message(interaction);
+    return true;
+  }
+
+  return false;
+};
+
 module.exports = {
 	lang_box_message,
-	disabled_message,
+	handleSelectMenuInteraction,
 };

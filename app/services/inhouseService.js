@@ -16,12 +16,21 @@ const inhouseQueues = new Map(); // guildId => Set<userTag>
  */
 async function addApplicant(guildId, user, guild) {
   if (!inhouseQueues.has(guildId)) inhouseQueues.set(guildId, []);
-  // const arr = inhouseQueues.get(guildId);
-  // if (!arr.find(u => u.userId === user.id)) arr.push({ userId: user.id, userTag: user.tag });
   const applicants = inhouseQueues.get(guildId);
-  // 닉네임 가져오기
-  let member = guild.members.cache.get(user.id);
-  if (!member) member = await guild.members.fetch(user.id);
+
+  let member;
+  try {
+    member = guild.members.cache.get(user.id) || await guild.members.fetch(user.id);
+  } catch (error) {
+    if (error.code === 10007) {
+      console.warn(`[inhouse] ${guild.name} - 유효하지 않은 유저 제거됨: ${user.id}`);
+      const idx = applicants.findIndex(a => a.userId === user.id);
+      if (idx !== -1) applicants.splice(idx, 1);
+      return;
+    }
+    throw error;
+  }
+
   const nickname = member.nickname || user.username;
   const already = applicants.find((a) => a.userId === user.id);
   if (!already) {
