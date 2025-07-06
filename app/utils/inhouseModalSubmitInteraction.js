@@ -98,7 +98,7 @@ async function handleModalSubmitInteraction(interaction) {
 
     const nameStr = removedUsers.join(", ");
 
-    backupApplicants(guildId); // 신청자 명단 백업
+    // backupApplicants(guildId); // 신청자 명단 백업
     toRemove.forEach((userId) => removeApplicant(guildId, userId));
 
     const embed = buildSignupEmbed(guildId);
