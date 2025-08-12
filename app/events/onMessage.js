@@ -13,6 +13,7 @@ module.exports = {
     const prefix = "!";
     if (msg.author.bot) return;
     if (msg.attachments.size > 0) {
+      if (msg.guild.id === "922118764437340230") return;   // 우끼대 서버는 무시
       const fileUrl = msg.attachments.first().url;
       const fileName = msg.attachments.first().name;
       const guildId = stringUtils.encodeGuildId(msg.guild.id);
