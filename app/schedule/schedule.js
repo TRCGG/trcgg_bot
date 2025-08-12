@@ -17,10 +17,19 @@ const cronSchedule = async (client) => {
 };
 
 const sendMessage = async (client) => {
-  cron.schedule("0 17 * * *", async () => {
+  // 월~토 오후 5시 (일요일 제외: 0이 일요일)
+  cron.schedule("0 17 * * 1-6", async () => {
     const channel = await client.channels.cache.get(TRC_CHANNEL_ID);
     if (channel) {
       channel.send("```19:30 시작합니다. 시작 5분전에 대기해주세요.```");
+    }
+  });
+
+  // 일요일 오후 3시
+  cron.schedule("0 15 * * 0", async () => {
+    const channel = client.channels.cache.get(TRC_CHANNEL_ID);
+    if (channel) {
+      channel.send("```17:00 시작합니다. 시작 5분전에 대기해주세요.```");
     }
   });
 };
