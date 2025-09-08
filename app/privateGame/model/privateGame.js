@@ -111,7 +111,7 @@ class PrivateGame {
     return { ok: true };
   }
 
-  // ✅ 이제 선픽은 "누가 먼저 1명 지명했는지"로 결정
+  // ✅ 이제 선픽은 "누가 먼저 1명 선택했는지"로 결정
   initPickOrderBy(teamFirst /* 'A' | 'B' */) {
     const other = teamFirst === "A" ? "B" : "A";
     this.pickOrder = [

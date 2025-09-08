@@ -38,11 +38,11 @@ function buildDraftPickMessage(room) {
   const turnText = isDone
     ? "픽 완료"
     : step
-    ? `${step.team}팀 차례 — ${step.count}명 지명`
-    : "선뽑 팀장이 먼저 1명을 지명하세요";
+    ? `${step.team}팀 차례 — ${step.count}명 선택`
+    : "선뽑 팀장이 먼저 1명을 선택하세요";
 
   const embed = new EmbedBuilder()
-    .setTitle('팀원 선택 화면 (지명 단계)')
+    .setTitle('팀원 선택 화면')
     .setDescription(`턴: **${turnText}**`)
     .addFields(
       { name: 'A팀', value: aLines.join('\n'), inline: true },

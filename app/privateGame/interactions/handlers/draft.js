@@ -1,5 +1,6 @@
 const {
   ensureHostOrCaptain, ensureActivePicker,
+  isPickStarted, isPickFinished,
   fetchRoomMessage,
 } = require('../helpers');
 const { sortParticipantsByTier } = require('../../embeds/common'); // common에서 export됨
@@ -55,7 +56,7 @@ async function pickOpen(interaction, room) {
   await maybeAutoAssignIfOneLeft(interaction, room);
 
   const lobbyMsg = await fetchRoomMessage(interaction, room);
-  await interaction.reply({ephemeral: true, content: `지명 단계로 이동했습니다`});
+  await interaction.reply({ephemeral: true, content: `선택 단계로 이동했습니다`});
   // await ephemeralToast(interaction, '지명 단계로 이동했습니다.');
   return lobbyMsg.edit(buildDraftPickMessage(room));
 }
@@ -83,34 +84,39 @@ async function maybeAutoAssignIfOneLeft(interaction, room) {
 
 async function pickChoose(interaction, room) {
   const rem = remainingSorted(room);
-  // 아직 선픽 미정이면: "클릭한 팀장"이 선픽 확정 + 1명 지명 턴
-  if (!room.pickOrder || room.pickOrder.length === 0) {
-    const uid = interaction.user.id;
-    let actorTeam = null;
-    if (room.captainA?.userId === uid) actorTeam = "A";
-    if (room.captainB?.userId === uid) actorTeam = "B";
-    if (!actorTeam) {
-      return interaction.reply({
-        ephemeral: true,
-        content: "선픽 시작은 팀장만 할 수 있어요.",
-      });
-    }
-    room.initPickOrderBy(actorTeam); // ✅ 선픽 확정
-  } else {
-    // 선픽 확정 이후엔 기존 가드 적용(현재 턴의 팀장 or 개최자)
+  // 선픽 전: 선픽 확정하지 않고, 단지 "1명 선택" 드롭다운만 띄움
+  if (!isPickStarted(room)) {
+    // 두 팀장 중 아무나 열 수 있도록 가드(ensureActivePicker가 선픽 전은 캡틴 허용)
     if (!ensureActivePicker(interaction, room)) return;
-  }
-
-  const step = room.currentPickStep();
-  if (!step)
+    const options = rem.map((p) => ({
+      label: `${p.tierStr ?? ""} ${p.nameTag ?? p.userId}`.trim(),
+      value: p.userId,
+    }));
+    const menu = new StringSelectMenuBuilder()
+      .setCustomId(`pg_pick_apply:${room.id}`)
+      .setPlaceholder(`선뽑: 1명 선택`)
+      .setMinValues(1)
+      .setMaxValues(1)
+      .addOptions(options);
+    const row = new ActionRowBuilder().addComponents(menu);
     return interaction.reply({
       ephemeral: true,
-      content: "이미 픽이 완료되었습니다.",
+      content: `선뽑: 1명을 선택하세요.`,
+      components: [row],
     });
+  }
+
+  // 선픽 이후: 현재 턴 검증하고, 그 턴의 요구 수만큼 선택
+  if (!ensureActivePicker(interaction, room)) return;
+
+  const step = room.currentPickStep();
+  if (!step || isPickFinished(room)) {
+    return interaction.reply({ ephemeral: true, content: '이미 픽이 완료되었습니다.' });
+  }
   if (rem.length === 0)
     return interaction.reply({
       ephemeral: true,
-      content: `지명할 선수가 없습니다.`,
+      content: `선택할 선수가 없습니다.`,
     });
   // if (rem.length === 0) return ephemeralToast(interaction, '지명할 선수가 없습니다.');
 
@@ -133,7 +139,7 @@ async function pickChoose(interaction, room) {
 
   const menu = new StringSelectMenuBuilder()
     .setCustomId(`pg_pick_apply:${room.id}`)
-    .setPlaceholder(`${step.team}팀 ${step.count}명 지명`)
+    .setPlaceholder(`${step.team}팀 ${step.count}명 선택`)
     .setMinValues(step.count)
     .setMaxValues(step.count)
     .addOptions(options);
@@ -147,14 +153,41 @@ async function pickChoose(interaction, room) {
 }
 
 async function pickApply(interaction, room) {
-  // 턴/권한 재확인 (동시 클릭 대비)
-  if (!ensureActivePicker(interaction, room)) return;
-
-  const step = room.currentPickStep();
-  if (!step) return interaction.reply({ephemeral: true, content: `이미 픽이 완료되었습니다.`});
-  // if (!step) return ephemeralToast(interaction, '이미 픽이 완료되었습니다.');
-
   const values = interaction.values || [];
+
+  // ⬇️ 선픽 미정 상태에서의 제출: 이때 선픽 확정 + 1명 지명
+  if (!isPickStarted(room)) {
+    // 선픽은 팀장만 가능(호스트가 선픽 강제하지 못하게)
+    const uid = interaction.user.id;
+    const actorTeam =
+      room.captainA?.userId === uid ? 'A' :
+      room.captainB?.userId === uid ? 'B' : null;
+  if (!actorTeam) {
+    return interaction.reply({ ephemeral: true, content: '선픽은 팀장만 할 수 있어요.' });
+  }
+  if (values.length !== 1) {
+    return interaction.reply({ ephemeral: true, content: '선픽은 1명만 선택할 수 있어요.' });
+  }
+    // 유효성(아직 남아 있는지) 재확인
+  const remIds = new Set(remainingSorted(room).map(p => p.userId));
+  if (!remIds.has(values[0])) {
+    return interaction.reply({ ephemeral: true, content: '이미 다른 팀에 배정되었거나 잘못된 선택입니다. 다시 시도해주세요.' });
+  }
+    // 선픽 확정 + 첫 픽 적용
+    room.initPickOrderBy(actorTeam);
+    room.addToTeam(actorTeam, [values[0]]);
+    room.pickTurnIdx = 1; // 첫 턴(1명) 소비 완료
+    await interaction.update({ content: '선픽이 확정되고 1명이 배정되었습니다.', components: [] });
+    const lobbyMsg = await fetchRoomMessage(interaction, room);
+    return lobbyMsg.edit(buildDraftPickMessage(room));
+  }
+
+  // ⬇️ 선픽 이후: 현재 턴 팀장/개최자만, 요구 수 일치해야 함
+  if (!ensureActivePicker(interaction, room)) return;
+  const step = room.currentPickStep();
+  if (!step || isPickFinished(room)) {
+    return interaction.reply({ ephemeral: true, content: '이미 픽이 완료되었습니다.' });
+  }
   if (values.length !== step.count) {
     return interaction.reply({ ephemeral: true, content: `지금은 **${step.count}명**을 지명해야 합니다.` });
   }
@@ -172,7 +205,7 @@ async function pickApply(interaction, room) {
   room.pickTurnIdx += 1;
 
   // 에페메랄 UI 닫기
-  await interaction.update({ content: '지명이 완료되었습니다.', components: [] });
+  await interaction.update({ content: '뽑기가 완료되었습니다.', components: [] });
 
   // 남은 1명 자동배정(다음 턴이 1명 요구이면)
   await maybeAutoAssignIfOneLeft(interaction, room);

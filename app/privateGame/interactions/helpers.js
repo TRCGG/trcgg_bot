@@ -65,19 +65,45 @@ function ensureEndPerm(interaction, room) {
   return false;
 }
 
+function isPickStarted(room) {
+  return Array.isArray(room.pickOrder) && room.pickOrder.length > 0;
+}
+
+function isPickFinished(room) {
+  if (!isPickStarted(room)) return false;
+  return room.pickTurnIdx >= room.pickOrder.length || room.isTeamsFull;
+}
+
 // 현재 픽 턴의 팀장만 허용
 function ensureActivePicker(interaction, room) {
-  const step = room.currentPickStep?.();
-  if (!step) {
-    interaction.reply({ ephemeral: true, content: '이미 픽이 완료되었습니다.' });
+  // 선픽 미정(시작 전) → 두 팀장 중 누구나 시작 가능
+  if (!isPickStarted(room)) {
+    if (isCaptain(interaction, room)) return true;
+    interaction.reply({
+      ephemeral: true,
+      content: "선픽은 팀장만 시작할 수 있어요.",
+    });
     return false;
   }
+  // 선픽 이후: 완료 상태면 막기
+  if (isPickFinished(room)) {
+    interaction.reply({
+      ephemeral: true,
+      content: "이미 픽이 완료되었습니다.",
+    });
+    return false;
+  }
+
+  const step = room.currentPickStep?.();
   const uid = interaction.user.id;
   const isRightCaptain =
-    (step.team === 'A' && room.captainA?.userId === uid) ||
-    (step.team === 'B' && room.captainB?.userId === uid);
+    (step.team === "A" && room.captainA?.userId === uid) ||
+    (step.team === "B" && room.captainB?.userId === uid);
   if (isRightCaptain) return true;
-  interaction.reply({ ephemeral: true, content: `${step.team}팀 차례입니다. 해당 팀장만 지명할 수 있어요.` });
+  interaction.reply({
+    ephemeral: true,
+    content: `${step.team}팀 차례입니다. 해당 팀장만 지명할 수 있어요.`,
+  });
   return false;
 }
 
@@ -90,4 +116,6 @@ module.exports = {
   ensureEndPerm,
   ensureActivePicker,
   ensureSideChooser,
+  isPickStarted,
+  isPickFinished,
 };
