@@ -3,7 +3,7 @@ const {
   fetchRoomMessage,
 } = require('../helpers');
 const { sortParticipantsByTier } = require('../../embeds/common'); // common에서 export됨
-const { buildDraftDiceMessage, buildDraftPickMessage } = require('../../embeds');
+const { buildDraftDiceMessage, buildDraftPickMessage, buildMatchMessage } = require('../../embeds');
 const { ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 
 function rollDistinct() {
@@ -178,6 +178,10 @@ async function pickApply(interaction, room) {
   await maybeAutoAssignIfOneLeft(interaction, room);
 
   const lobbyMsg = await fetchRoomMessage(interaction, room);
+if (room.isTeamsFull) {
+  // 팀이 모두 찼으면 4단계 화면으로 전환
+  return lobbyMsg.edit(buildMatchMessage(room));
+ }
   return lobbyMsg.edit(buildDraftPickMessage(room));
 }
 

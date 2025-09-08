@@ -4,5 +4,6 @@ module.exports = {
   ...require('./captains'),
   ...require('./dice'),
   ...require('./draft'),
-   ...require('./pick'),
+  ...require('./pick'),
+  ...require('./match')
 };

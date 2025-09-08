@@ -22,6 +22,16 @@ function isCaptain(interaction, room) {
   return room.captainA?.userId === uid || room.captainB?.userId === uid;
 }
 
+function isCaptainA(interaction, room) {
+  return room.captainA?.userId === interaction.user.id;
+}
+
+function ensureSideChooser(interaction, room) {
+  if (isCaptainA(interaction, room)) return true;
+  interaction.reply({ ephemeral: true, content: '진영 선택은 A팀장만 할 수 있어요.' });
+  return false;
+}
+
 function ensureHostOrCaptain(interaction, room) {
   if (interaction.user.id === room.hostId || isCaptain(interaction, room))
     return true;
@@ -79,4 +89,5 @@ module.exports = {
   ensureHostOrCaptain,
   ensureEndPerm,
   ensureActivePicker,
+  ensureSideChooser,
 };
