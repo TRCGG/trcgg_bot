@@ -36,8 +36,8 @@ class PrivateGame {
     this.teamA = [];
     this.teamB = [];
     this.remaining = [];
-    this.pickOrder = [];
-    this.pickTurnIdx = 0;
+    this.pickOrder = []; // [{team:'A'|'B', count:1|2}]
+    this.pickTurnIdx = 0; // 현재 턴 인덱스
     this.side = { A: null, B: null };
   }
 
@@ -109,6 +109,44 @@ class PrivateGame {
     this.captainA = a;
     this.captainB = b;
     return { ok: true };
+  }
+
+  // ✅ 이제 선픽은 "누가 먼저 1명 지명했는지"로 결정
+  initPickOrderBy(teamFirst /* 'A' | 'B' */) {
+    const other = teamFirst === "A" ? "B" : "A";
+    this.pickOrder = [
+      { team: teamFirst, count: 1 },
+      { team: other, count: 2 },
+      { team: teamFirst, count: 2 },
+      { team: other, count: 2 },
+      { team: teamFirst, count: 1 },
+    ];
+    this.pickTurnIdx = 0;
+  }
+
+  currentPickStep() {
+    return this.pickOrder?.[this.pickTurnIdx] ?? null;
+  }
+
+  addToTeam(team, userIds) {
+    const list = team === "A" ? this.teamA : this.teamB;
+    for (const uid of userIds) list.push(uid);
+  }
+
+  /**
+   * 2~5단계 진행 상태를 모두 초기화하고 로비 상태로 되돌린다.
+   * - 참가자/취소/추방/호스트 관련 정보는 유지
+   */
+  resetToLobby() {
+    this.captainA = null;
+    this.captainB = null;
+    this.diceA = null;
+    this.diceB = null;
+    this.teamA = [];
+    this.teamB = [];
+    this.pickOrder = [];
+    this.pickTurnIdx = 0;
+    this.side = { A: null, B: null };
   }
 }
 

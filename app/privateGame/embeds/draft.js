@@ -13,6 +13,7 @@ function displayLineFromUserId(room, userId) {
 function buildDraftDiceMessage(room) {
   const diceA = Number.isInteger(room.diceA) ? room.diceA : '-';
   const diceB = Number.isInteger(room.diceB) ? room.diceB : '-';
+  const hasDice = Number.isInteger(room.diceA) && Number.isInteger(room.diceB);
 
   // 팀 라인(1~5) - 1번은 팀장 고정, 나머지는 현재 팀 배열을 기반으로 채움(없으면 공란)
   const aLines = [];
@@ -53,6 +54,11 @@ function buildDraftDiceMessage(room) {
 
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(`pg_dice:${room.id}`).setLabel('주사위').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+     .setCustomId(`pg_pick_open:${room.id}`)
+     .setLabel('팀원 뽑기')
+     .setStyle(ButtonStyle.Success)
+     .setDisabled(!hasDice), // 주사위 끝나야 활성화
     new ButtonBuilder().setCustomId(`pg_back_lobby:${room.id}`).setLabel('처음으로').setStyle(ButtonStyle.Secondary),
   );
 

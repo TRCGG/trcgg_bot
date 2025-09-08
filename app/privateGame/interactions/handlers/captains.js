@@ -1,5 +1,5 @@
 const { ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
-const { ensureHost, fetchRoomMessage } = require('../helpers');
+const { ensureHost, ensureHostOrCaptain, fetchRoomMessage } = require('../helpers');
 const { buildCaptainSelectMessage, buildDraftDiceMessage, buildLobbyMessage } = require('../../embeds');
 const { sortParticipantsByTier } = require('../../embeds/common');
 
@@ -43,6 +43,8 @@ async function apply(interaction, room) {
 }
 
 async function backToLobby(interaction, room) {
+  ensureHostOrCaptain(interaction, room);
+  room.resetToLobby();
   const lobbyMsg = await fetchRoomMessage(interaction, room);
   await interaction.reply({ ephemeral: true, content: '로비로 돌아갑니다.' });
   return lobbyMsg.edit(buildLobbyMessage(room));

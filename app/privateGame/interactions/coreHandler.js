@@ -27,7 +27,12 @@ module.exports = async (interaction) => {
   if (action === 'captains_apply' && interaction.isStringSelectMenu()) return captains.apply(interaction, room);
   if (action === 'back_lobby') return captains.backToLobby(interaction, room);
 
-  // ===== 3.1 드래프트(주사위) =====
-  if (action === 'dice' && interaction.isButton()) return draft.dice(interaction, room);
+   // 3.1
+   if (action === 'dice' && interaction.isButton()) return draft.dice(interaction, room);
+
+   // 3.2
+   if (action === 'pick_open' && interaction.isButton()) return draft.pickOpen(interaction, room);
+   if (action === 'pick_choose' && interaction.isButton()) return draft.pickChoose(interaction, room);
+   if (action === 'pick_apply' && interaction.isStringSelectMenu()) return draft.pickApply(interaction, room);
   
 };

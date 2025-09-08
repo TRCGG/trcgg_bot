@@ -4,4 +4,5 @@ module.exports = {
   ...require('./captains'),
   ...require('./dice'),
   ...require('./draft'),
+   ...require('./pick'),
 };

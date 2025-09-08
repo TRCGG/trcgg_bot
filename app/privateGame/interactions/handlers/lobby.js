@@ -113,7 +113,7 @@ async function expelApply(interaction, room) {
   }
   if (result.hostChanged) {
     const nextName = result.newhostNameTag ?? '알수없음';
-    await interaction.followUp({ content: `개최자가 **${nextName}**(<@${result.newHostId}>)로 변경되었습니다.`, ephemeral: true });
+    await interaction.followUp({ content: `개최자가 **${nextName}**로 변경되었습니다.`, ephemeral: true });
   }
   return edit(lobbyMsg, buildLobbyMessage(room));
 }

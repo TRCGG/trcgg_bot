@@ -55,6 +55,22 @@ function ensureEndPerm(interaction, room) {
   return false;
 }
 
+// 현재 픽 턴의 팀장만 허용
+function ensureActivePicker(interaction, room) {
+  const step = room.currentPickStep?.();
+  if (!step) {
+    interaction.reply({ ephemeral: true, content: '이미 픽이 완료되었습니다.' });
+    return false;
+  }
+  const uid = interaction.user.id;
+  const isRightCaptain =
+    (step.team === 'A' && room.captainA?.userId === uid) ||
+    (step.team === 'B' && room.captainB?.userId === uid);
+  if (isRightCaptain) return true;
+  interaction.reply({ ephemeral: true, content: `${step.team}팀 차례입니다. 해당 팀장만 지명할 수 있어요.` });
+  return false;
+}
+
 module.exports = {
   edit,
   fetchRoomMessage,
@@ -62,4 +78,5 @@ module.exports = {
   isCaptain,
   ensureHostOrCaptain,
   ensureEndPerm,
+  ensureActivePicker,
 };
