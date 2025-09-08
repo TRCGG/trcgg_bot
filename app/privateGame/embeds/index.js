@@ -3,4 +3,5 @@ module.exports = {
   ...require('./lobby'),
   ...require('./captains'),
   ...require('./dice'),
+  ...require('./draft'),
 };

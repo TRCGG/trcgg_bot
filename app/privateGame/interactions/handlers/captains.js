@@ -1,6 +1,6 @@
 const { ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const { ensureHost, fetchRoomMessage } = require('../helpers');
-const { buildCaptainSelectMessage, buildDicePlaceholderMessage, buildLobbyMessage } = require('../../embeds');
+const { buildCaptainSelectMessage, buildDraftDiceMessage, buildLobbyMessage } = require('../../embeds');
 const { sortParticipantsByTier } = require('../../embeds/common');
 
 async function startPhase(interaction, room) {
@@ -39,7 +39,7 @@ async function apply(interaction, room) {
   }
   await interaction.update({ content: '팀장이 지정되었습니다.', components: [] });
   const lobbyMsg = await fetchRoomMessage(interaction, room);
-  return lobbyMsg.edit(buildDicePlaceholderMessage(room));
+  return lobbyMsg.edit(buildDraftDiceMessage(room));
 }
 
 async function backToLobby(interaction, room) {

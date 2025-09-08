@@ -1,6 +1,7 @@
 const store = require('../stores/privateGameStore');
 const lobby = require('./handlers/lobby');
 const captains = require('./handlers/captains');
+const draft = require('./handlers/draft');
 
 module.exports = async (interaction) => {
   if (!interaction.isButton() && !interaction.isStringSelectMenu() && !interaction.isModalSubmit()) return;
@@ -25,4 +26,8 @@ module.exports = async (interaction) => {
   if (action === 'choose_captains' && interaction.isButton()) return captains.openSelect(interaction, room);
   if (action === 'captains_apply' && interaction.isStringSelectMenu()) return captains.apply(interaction, room);
   if (action === 'back_lobby') return captains.backToLobby(interaction, room);
+
+  // ===== 3.1 드래프트(주사위) =====
+  if (action === 'dice' && interaction.isButton()) return draft.dice(interaction, room);
+  
 };
