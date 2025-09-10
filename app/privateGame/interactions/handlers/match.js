@@ -1,4 +1,4 @@
-const { ensureSideChooser, ensureEndPerm, fetchRoomMessage } = require('../helpers');
+const { ensureSideChooser, ensureEndPerm, fetchRoomMessage, captainTeam } = require('../helpers');
 const { buildMatchMessage, buildSideSelectEphemeral } = require('../../embeds');
 
 async function open(interaction, room) {
@@ -10,16 +10,22 @@ async function open(interaction, room) {
 
 async function openSideSelect(interaction, room) {
   if (!ensureSideChooser(interaction, room)) return;
-  return interaction.reply(buildSideSelectEphemeral(room));
+  const team = captainTeam(interaction, room) || 'A';
+  return interaction.reply(buildSideSelectEphemeral(room, team));
 }
 
 async function applySide(interaction, room) {
   if (!ensureSideChooser(interaction, room)) return;
+  const team = captainTeam(interaction, room) || 'A';
   const val = (interaction.values?.[0] || '').toUpperCase();
   if (val !== 'BLUE' && val !== 'RED') {
     return interaction.reply({ ephemeral: true, content: '잘못된 진영입니다.' });
   }
-  room.side = { A: val, B: val === 'BLUE' ? 'RED' : 'BLUE' };
+  if (team === 'A') {
+    room.side = { A: val, B: val === 'BLUE' ? 'RED' : 'BLUE' };
+  } else {
+    room.side = { B: val, A: val === 'BLUE' ? 'RED' : 'BLUE' };
+  }
   await interaction.deferUpdate();
   await interaction.deleteReply();
   // await interaction.update({ content: '진영이 설정되었습니다.', components: [] });

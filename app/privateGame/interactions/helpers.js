@@ -38,13 +38,21 @@ function isCaptain(interaction, room) {
   return room.captainA?.userId === uid || room.captainB?.userId === uid;
 }
 
-/**
- * @param {*} interaction 
- * @param {*} room 
- * @desc 팀장A 권한 확인
- */
-function isCaptainA(interaction, room) {
-  return room.captainA?.userId === interaction.user.id;
+// /**
+//  * @param {*} interaction 
+//  * @param {*} room 
+//  * @desc 팀장A 권한 확인
+//  */
+// function isCaptainA(interaction, room) {
+//   return room.captainA?.userId === interaction.user.id;
+// }
+
+// A/B 팀 중 어느 팀장인지 식별
+function captainTeam(interaction, room) {
+  const uid = interaction.user.id;
+  if (room.captainA?.userId === uid) return 'A';
+  if (room.captainB?.userId === uid) return 'B';
+  return null;
 }
 
 /**
@@ -53,8 +61,8 @@ function isCaptainA(interaction, room) {
  * @desc 진영 선택 권한 확인
  */
 function ensureSideChooser(interaction, room) {
-  if (isCaptainA(interaction, room)) return true;
-  interaction.reply({ ephemeral: true, content: '진영 선택은 A팀장만 할 수 있어요.' });
+  if (isCaptain(interaction, room)) return true;
+  interaction.reply({ ephemeral: true, content: '진영 선택은 팀장만 할 수 있어요.' });
   return false;
 }
 
@@ -171,6 +179,7 @@ module.exports = {
   fetchRoomMessage,
   ensureHost,
   isCaptain,
+  captainTeam,
   ensureHostOrCaptain,
   ensureEndPerm,
   ensureActivePicker,

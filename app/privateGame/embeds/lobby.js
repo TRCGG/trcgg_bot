@@ -27,13 +27,13 @@ function buildLobbyMessage(room) {
   const row1 = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(`pg_join:${room.id}`).setLabel('참가').setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId(`pg_leave:${room.id}`).setLabel('취소').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`pg_expel:${room.id}`).setLabel('추방').setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`pg_expel:${room.id}`).setLabel('추방').setStyle(ButtonStyle.Secondary),
   );
 
   const row2 = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`pg_start2:${room.id}`)
-      .setLabel('시작(팀장선택)')
+      .setLabel('시작(팀장 선택)')
       .setStyle(ButtonStyle.Primary)
       .setDisabled(!isFull),
     new ButtonBuilder().setCustomId(`pg_end:${room.id}`).setLabel('종료').setStyle(ButtonStyle.Danger),

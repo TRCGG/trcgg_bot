@@ -41,19 +41,21 @@ function buildMatchMessage(room) {
 
 /**
  * @param {*} room 
+ * @param {*} chooserTeam
  * @desc A팀 진영 선택 드롭다운 (에페메랄)
  */
-function buildSideSelectEphemeral(room) {
+function buildSideSelectEphemeral(room, chooserTeam) {
+  const label = chooserTeam === 'B' ? 'B팀 진영을 선택하세요' : 'A팀 진영을 선택하세요';
   const menu = new StringSelectMenuBuilder()
     .setCustomId(`pg_side_apply:${room.id}`)
-    .setPlaceholder('A팀 진영을 선택하세요')
+    .setPlaceholder(label)
     .setMinValues(1).setMaxValues(1)
     .addOptions(
       { label: '블루', value: 'BLUE' },
       { label: '레드', value: 'RED'  },
     );
   const row = new ActionRowBuilder().addComponents(menu);
-  return { content: 'A팀 진영을 선택하세요.', components: [row], ephemeral: true };
+  return { content: label, components: [row], ephemeral: true };
 }
 
 module.exports = { buildMatchMessage, buildSideSelectEphemeral };
