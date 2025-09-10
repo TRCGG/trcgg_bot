@@ -3,9 +3,9 @@ const {
   isPickStarted, isPickFinished,
   fetchRoomMessage,
 } = require('../helpers');
-const { sortParticipantsByTier } = require('../../embeds/common'); // common에서 export됨
 const { buildDraftDiceMessage, buildDraftPickMessage, buildMatchMessage } = require('../../embeds');
 const { ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { sortParticipantsByTier } = require('../../utils/tierUtils')
 
 function rollDistinct() {
   const a = Math.floor(Math.random() * 50) + 1;
@@ -17,8 +17,7 @@ function rollDistinct() {
 // ===== 3.1 주사위 =====
 async function open(interaction, room) {
   const lobbyMsg = await fetchRoomMessage(interaction, room);
-  await interaction.reply({ephemeral: true, content: '주사위 단계로 이동했습니다.'});
-  // await ephemeralToast(interaction, '주사위 단계로 이동했습니다.');
+  await interaction.deferUpdate();
   return lobbyMsg.edit(buildDraftDiceMessage(room));
 }
 
@@ -30,8 +29,8 @@ async function dice(interaction, room) {
   room.diceB = b;
 
   const lobbyMsg = await fetchRoomMessage(interaction, room);
-  await interaction.reply({ephemeral: true, content: `주사위 결과 → A:${a}, B:${b}`});
-  // await ephemeralToast(interaction, `주사위 결과 → A:${a}, B:${b}`);
+  // await interaction.reply({ephemeral: true, content: `주사위 결과 → A:${a}, B:${b}`});
+  await interaction.deferUpdate();
   return lobbyMsg.edit(buildDraftDiceMessage(room));
 }
 
@@ -49,22 +48,20 @@ async function pickOpen(interaction, room) {
 
   if (!Number.isInteger(room.diceA) || !Number.isInteger(room.diceB)) {
     return await interaction.reply({ephemeral: true, content: `먼저 주사위를 굴려주세요`});
-    // return ephemeralToast(interaction, '먼저 주사위를 굴려주세요.');
   }
 
   // 마지막 1명 자동배정 처리(혹시 상태가 애매하게 남아있을 때)
   await maybeAutoAssignIfOneLeft(interaction, room);
 
   const lobbyMsg = await fetchRoomMessage(interaction, room);
-  await interaction.reply({ephemeral: true, content: `선택 단계로 이동했습니다`});
-  // await ephemeralToast(interaction, '지명 단계로 이동했습니다.');
+  await interaction.deferUpdate();
   return lobbyMsg.edit(buildDraftPickMessage(room));
 }
 
-function currentRequiredCount(room) {
-  const step = room.currentPickStep();
-  return step ? step.count : 0;
-}
+// function currentRequiredCount(room) {
+//   const step = room.currentPickStep();
+//   return step ? step.count : 0;
+// }
 
 // 남은 선수가 1명이고 현재 턴의 요구 수가 1이면 자동 배정
 async function maybeAutoAssignIfOneLeft(interaction, room) {
@@ -124,11 +121,11 @@ async function pickChoose(interaction, room) {
   if (rem.length === 1 && step.count === 1) {
     await maybeAutoAssignIfOneLeft(interaction, room);
     const lobbyMsg = await fetchRoomMessage(interaction, room);
-    await interaction.reply({
-      ephemeral: true,
-      content: `남은 1명은 자동 배정되었습니다.`,
-    });
-    // await ephemeralToast(interaction, '남은 1명은 자동 배정되었습니다.');
+    // await interaction.reply({
+    //   ephemeral: true,
+    //   content: `남은 1명은 자동 배정되었습니다.`,
+    // });
+    await interaction.deferUpdate();
     return lobbyMsg.edit(buildDraftPickMessage(room));
   }
 
@@ -177,7 +174,9 @@ async function pickApply(interaction, room) {
     room.initPickOrderBy(actorTeam);
     room.addToTeam(actorTeam, [values[0]]);
     room.pickTurnIdx = 1; // 첫 턴(1명) 소비 완료
-    await interaction.update({ content: '선픽이 확정되고 1명이 배정되었습니다.', components: [] });
+    await interaction.deferUpdate();
+    await interaction.deleteReply();
+    // await interaction.update({ content: '선픽이 확정되고 1명이 배정되었습니다.', components: [] });
     const lobbyMsg = await fetchRoomMessage(interaction, room);
     return lobbyMsg.edit(buildDraftPickMessage(room));
   }
@@ -205,7 +204,9 @@ async function pickApply(interaction, room) {
   room.pickTurnIdx += 1;
 
   // 에페메랄 UI 닫기
-  await interaction.update({ content: '뽑기가 완료되었습니다.', components: [] });
+  await interaction.deferUpdate();
+  await interaction.deleteReply();
+  // await interaction.update({ content: '뽑기가 완료되었습니다.', components: [] });
 
   // 남은 1명 자동배정(다음 턴이 1명 요구이면)
   await maybeAutoAssignIfOneLeft(interaction, room);

@@ -1,14 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('./common');
-const { sortParticipantsByTier } = require('./common');
-
-function displayLineFromUserId(room, userId) {
-  const p = room.participants.find(x => x.userId === userId)
-        || room.captainA?.userId === userId && room.captainA
-        || room.captainB?.userId === userId && room.captainB;
-  if (!p) return '';
-  const tier = p.tierStr ? `${p.tierStr} ` : '';
-  return `${tier}${p.nameTag ?? p.userId}`;
-}
+const { displayLineFromUserId } = require('./common');
+const { sortParticipantsByTier } = require('../utils/tierUtils')
 
 function buildDraftDiceMessage(room) {
   const diceA = Number.isInteger(room.diceA) ? room.diceA : '-';
@@ -43,13 +35,13 @@ function buildDraftDiceMessage(room) {
   }).join('\n') || '-';
 
   const embed = new EmbedBuilder()
-    .setTitle('팀원 선택 화면 (주사위 굴리기)')
+    .setTitle('팀원 선택 (주사위 굴리기)')
     .addFields(
       { name: `A팀 (${diceA})`, value: aLines.join('\n'), inline: true },
       { name: `B팀 (${diceB})`, value: bLines.join('\n'), inline: true },
     )
     .addFields(
-      { name: '남은 선수', value: remainingLines, inline: false }
+      { name: '선수 명단', value: remainingLines, inline: false }
     );
 
   const row = new ActionRowBuilder().addComponents(

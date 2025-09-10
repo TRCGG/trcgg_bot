@@ -4,7 +4,7 @@ const {
   ButtonBuilder,
   ButtonStyle,
 } = require('./common');
-const { formatParticipantsGroupedByTier } = require('./common');
+const { formatParticipantsGroupedByTier } = require('../utils/tierUtils');
 
 function buildCaptainSelectMessage(room) {
   const embed = new EmbedBuilder()

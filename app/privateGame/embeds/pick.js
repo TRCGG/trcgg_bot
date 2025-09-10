@@ -1,15 +1,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('./common');
-const { sortParticipantsByTier } = require('./common');
+const { displayLineFromUserId } = require('./common');
+const { sortParticipantsByTier } = require('../utils/tierUtils')
 
-function displayLineFromUserId(room, userId) {
-  if (!userId) return '';
-  const src = room.participants.find(p => p.userId === userId)
-          || (room.captainA?.userId === userId ? room.captainA : null)
-          || (room.captainB?.userId === userId ? room.captainB : null);
-  if (!src) return '';
-  const tier = src.tierStr ? `${src.tierStr} ` : '';
-  return `${tier}${src.nameTag ?? src.userId}`;
-}
 
 function buildDraftPickMessage(room) {
   const aLines = [];
@@ -42,12 +34,12 @@ function buildDraftPickMessage(room) {
     : "선뽑 팀장이 먼저 1명을 선택하세요";
 
   const embed = new EmbedBuilder()
-    .setTitle('팀원 선택 화면')
+    .setTitle('팀원 선택')
     .setDescription(`턴: **${turnText}**`)
     .addFields(
       { name: 'A팀', value: aLines.join('\n'), inline: true },
       { name: 'B팀', value: bLines.join('\n'), inline: true },
-      { name: '남은 선수 (티어순)', value: remainingLines, inline: false },
+      { name: '선수 명단', value: remainingLines, inline: false },
     );
 
   const row = new ActionRowBuilder().addComponents(

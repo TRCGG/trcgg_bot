@@ -1,15 +1,26 @@
 const { ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const { ensureHost, ensureHostOrCaptain, fetchRoomMessage } = require('../helpers');
 const { buildCaptainSelectMessage, buildDraftDiceMessage, buildLobbyMessage } = require('../../embeds');
-const { sortParticipantsByTier } = require('../../embeds/common');
+const { sortParticipantsByTier } = require('../../utils/tierUtils')
 
+
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 팀장 선택 화면 전환
+ */
 async function startPhase(interaction, room) {
   if (!ensureHost(interaction, room)) return;
   const lobbyMsg = await fetchRoomMessage(interaction, room);
-  await interaction.reply({ ephemeral: true, content: '팀장 선택 화면으로 전환되었습니다.' });
+  await interaction.deferUpdate();
   return lobbyMsg.edit(buildCaptainSelectMessage(room));
 }
 
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 팀장 2명 선택
+ */
 async function openSelect(interaction, room) {
   if (!ensureHost(interaction, room)) return;
   if (room.participants.length < 2) {
@@ -30,6 +41,11 @@ async function openSelect(interaction, room) {
   return interaction.reply({ ephemeral: true, content: '팀장으로 지정할 2명을 선택하세요.', components: [row] });
 }
 
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 팀장 지정 완료
+ */
 async function apply(interaction, room) {
   if (!ensureHost(interaction, room)) return;
   const [idA, idB] = interaction.values;
@@ -37,17 +53,26 @@ async function apply(interaction, room) {
   if (!res.ok) {
     return interaction.reply({ ephemeral: true, content: '팀장 지정에 실패했습니다. 다시 시도해주세요.' });
   }
-  await interaction.update({ content: '팀장이 지정되었습니다.', components: [] });
+  await interaction.deferUpdate();
+  await interaction.deleteReply();
+  // await interaction.update({ content: '팀장이 지정되었습니다.', components: [] });
   const lobbyMsg = await fetchRoomMessage(interaction, room);
   return lobbyMsg.edit(buildDraftDiceMessage(room));
 }
 
+
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 처음으로
+ */
 async function backToLobby(interaction, room) {
-  ensureHostOrCaptain(interaction, room);
-  room.resetToLobby();
-  const lobbyMsg = await fetchRoomMessage(interaction, room);
-  await interaction.reply({ ephemeral: true, content: '로비로 돌아갑니다.' });
-  return lobbyMsg.edit(buildLobbyMessage(room));
+  if(ensureHostOrCaptain(interaction, room)){
+    room.resetToLobby();
+    const lobbyMsg = await fetchRoomMessage(interaction, room);
+    await interaction.deferUpdate();
+    return lobbyMsg.edit(buildLobbyMessage(room));
+  };
 }
 
 module.exports = { startPhase, openSelect, apply, backToLobby };

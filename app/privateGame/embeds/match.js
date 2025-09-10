@@ -1,22 +1,15 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('./common');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, displayLineFromUserId } = require('./common');
 
-function displayLineFromUserId(room, userId) {
-  if (!userId) return '';
-  const src =
-    room.participants.find(p => p.userId === userId) ||
-    (room.captainA?.userId === userId ? room.captainA : null) ||
-    (room.captainB?.userId === userId ? room.captainB : null);
-  if (!src) return '';
-  const tier = src.tierStr ? `${src.tierStr} ` : '';
-  return `${tier}${src.nameTag ?? src.userId}`;
-}
-
+/**
+ * @param {*} room 
+ * @desc 경기 진행 화면 생성
+ */
 function buildMatchMessage(room) {
   const sideA = room.side?.A || null;            // 'BLUE' | 'RED' | null
   const sideB = sideA ? (sideA === 'BLUE' ? 'RED' : 'BLUE') : null;
 
-  const aTitle = `A 1팀${sideA ? (sideA==='BLUE' ? '(블루)' : ' (레드)') : ''}`;
-  const bTitle = `B 2팀${sideB ? (sideB==='BLUE' ? '(블루)' : ' (레드)') : ''}`;
+  const aTitle = `A 1팀${sideA ? (sideA==='BLUE' ? '(블루)' : '(레드)') : ''}`;
+  const bTitle = `B 2팀${sideB ? (sideB==='BLUE' ? '(블루)' : '(레드)') : ''}`;
 
   const aLines = [];
   const bLines = [];
@@ -30,7 +23,7 @@ function buildMatchMessage(room) {
   }
 
   const embed = new EmbedBuilder()
-    .setTitle('경기 진행 화면')
+    .setTitle('경기 진행')
     .addFields(
       { name: aTitle, value: aLines.join('\n'), inline: true },
       { name: bTitle, value: bLines.join('\n'), inline: true },
@@ -45,7 +38,11 @@ function buildMatchMessage(room) {
   return { embeds: [embed], components: [row1] };
 }
 
-// A팀 진영 선택 드롭다운 (에페메랄)
+
+/**
+ * @param {*} room 
+ * @desc A팀 진영 선택 드롭다운 (에페메랄)
+ */
 function buildSideSelectEphemeral(room) {
   const menu = new StringSelectMenuBuilder()
     .setCustomId(`pg_side_apply:${room.id}`)

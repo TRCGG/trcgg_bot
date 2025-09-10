@@ -19,8 +19,8 @@ async function join(interaction, room) {
 
   if (parsedTier) {
     room.participants.push({ userId: interaction.user.id, nameTag, tierStr: parsedTier, joinedAt: new Date() });
-    await interaction.reply({ ephemeral: true, content: `참가 완료! (티어: ${parsedTier})` });
-    const lobbyMsg = interaction.message ?? await fetchRoomMessage(interaction, room);
+    await interaction.deferUpdate();
+    const lobbyMsg = await fetchRoomMessage(interaction, room);
     return edit(lobbyMsg, buildLobbyMessage(room));
   }
 
@@ -29,10 +29,12 @@ async function join(interaction, room) {
     .setTitle('현재 티어를 입력해주세요');
   const input = new TextInputBuilder()
     .setCustomId('tier_input')
-    .setLabel('형식: E4, GM500, M105 등 (알파벳+숫자)')
+    .setLabel('형식: 티어 영문 알파벳 1글자 + 숫자')
     .setRequired(true)
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder('예: E4 또는 GM500');
+    .setPlaceholder('언랭크 = U / 에메랄드 4 = E4 / 그랜드마스터 900 = GM900')
+    // .setValue(preset.slice(0,10));  //길이 방지
+
   modal.addComponents(new ActionRowBuilder().addComponents(input));
   return interaction.showModal(modal);
 }
@@ -53,10 +55,9 @@ async function tierModal(interaction, room) {
   }
   const displayName = interaction.member?.displayName || interaction.user.username;
   room.participants.push({ userId: interaction.user.id, nameTag: displayName, tierStr: userInput, joinedAt: new Date() });
-
-  await interaction.reply({ ephemeral: true, content: `참가 완료! (티어: ${userInput})` });
+  await interaction.deferUpdate();
   const lobbyMsg = await fetchRoomMessage(interaction, room);
-  return edit(lobbyMsg, buildLobbyMessage(room));
+  await edit(lobbyMsg, buildLobbyMessage(room));
 }
 
 /** 취소 */
@@ -71,11 +72,10 @@ async function leave(interaction, room) {
     await interaction.reply({ ephemeral: true, content: '내전이 종료되었습니다.' });
     return edit(lobbyMsg, { embeds: [], components: [], content: `\`[종료]\` ${room.title ?? ''}` });
   }
-
-  await interaction.reply({ ephemeral: true, content: '취소되었습니다.' });
+  await interaction.deferUpdate();
   if (result.hostChanged) {
     const nextName = result.newhostNameTag ?? '알수없음';
-    await interaction.followUp({ content: `개최자가 **${nextName}**(<@${result.newHostId}>)로 변경되었습니다.`, ephemeral: true });
+    await interaction.followUp({ content: `개최자가 **${nextName}**로 변경되었습니다.`, ephemeral: true });
   }
   return edit(lobbyMsg, buildLobbyMessage(room));
 }
@@ -105,7 +105,10 @@ async function expelApply(interaction, room) {
   if (idx === -1) return interaction.reply({ ephemeral: true, content: '이미 목록에 없어요.' });
 
   const result = room.removeParticipant(targetId, { reason: 'ban' });
-  await interaction.update({ content: '추방 처리 완료.', components: [] });
+  // await interaction.update({ components: [] });
+  await interaction.deferUpdate();
+  await interaction.deleteReply();
+  // await interaction.update({ content: '추방 처리 완료.', components: [] });
 
   const lobbyMsg = await fetchRoomMessage(interaction, room);
   if (result.ended) {
@@ -122,8 +125,9 @@ async function expelApply(interaction, room) {
 async function end(interaction, room) {
   if (!ensureEndPerm(interaction, room)) return;
   const lobbyMsg = await fetchRoomMessage(interaction, room);
-  await interaction.reply({ ephemeral: true, content: '내전 종료.' });
-  return edit(lobbyMsg, { embeds: [], components: [], content: `\`[종료]\` ${room.title ?? ''}` });
+  const endedBy = interaction.member?.displayName || interaction.user.username;
+  await interaction.deferUpdate();
+  return edit(lobbyMsg, { embeds: [], components: [], content: `**${endedBy}**님이 종료하였습니다.` });
 }
 
 module.exports = { join, tierModal, leave, expelOpen, expelApply, end };

@@ -1,11 +1,22 @@
 const edit = (message, payload) => message.edit(payload);
 const { PermissionsBitField } = require("discord.js");
 
+/**
+ * 
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 내전모집 메시지 fetch
+ */
 async function fetchRoomMessage(interaction, room) {
   const channel = await interaction.client.channels.fetch(room.channelId);
   return channel.messages.fetch(room.messageId);
 }
 
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 개최자 권한 확인
+ */
 function ensureHost(interaction, room) {
   if (interaction.user.id !== room.hostId) {
     interaction.reply({
@@ -17,24 +28,45 @@ function ensureHost(interaction, room) {
   return true;
 }
 
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 팀장 권한 확인
+ */
 function isCaptain(interaction, room) {
   const uid = interaction.user.id;
   return room.captainA?.userId === uid || room.captainB?.userId === uid;
 }
 
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 팀장A 권한 확인
+ */
 function isCaptainA(interaction, room) {
   return room.captainA?.userId === interaction.user.id;
 }
 
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 진영 선택 권한 확인
+ */
 function ensureSideChooser(interaction, room) {
   if (isCaptainA(interaction, room)) return true;
   interaction.reply({ ephemeral: true, content: '진영 선택은 A팀장만 할 수 있어요.' });
   return false;
 }
 
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 개최자 또는 팀장 권한 확인
+ */
 function ensureHostOrCaptain(interaction, room) {
-  if (interaction.user.id === room.hostId || isCaptain(interaction, room))
+  if (interaction.user.id === room.hostId || isCaptain(interaction, room)){
     return true;
+  };
   interaction.reply({
     ephemeral: true,
     content: "개최자 또는 팀장만 사용할 수 있어요.",
@@ -42,6 +74,11 @@ function ensureHostOrCaptain(interaction, room) {
   return false;
 }
 
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 디스코드 서버 관리 권한 확인
+ */
 function hasServerManage(interaction) {
   // 길드 멤버 권한 검사 (Administrator 또는 ManageGuild)
   const perms = interaction.member?.permissions;
@@ -52,10 +89,20 @@ function hasServerManage(interaction) {
   );
 }
 
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 개최자와 서버 관리 권한 있는 사람만 종료 가능
+ */
 function canEnd(interaction, room) {
   return interaction.user.id === room.hostId || hasServerManage(interaction);
 }
 
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 종료 권한 없으면 나오는 메시지
+ */
 function ensureEndPerm(interaction, room) {
   if (canEnd(interaction, room)) return true;
   interaction.reply({
@@ -65,16 +112,28 @@ function ensureEndPerm(interaction, room) {
   return false;
 }
 
+/**
+ * @param {*} room 
+ * @desc 팀원 선택
+ */
 function isPickStarted(room) {
   return Array.isArray(room.pickOrder) && room.pickOrder.length > 0;
 }
 
+/**
+ * @param {*} room 
+ * @desc 팀원 선택 끝
+ */
 function isPickFinished(room) {
   if (!isPickStarted(room)) return false;
   return room.pickTurnIdx >= room.pickOrder.length || room.isTeamsFull;
 }
 
-// 현재 픽 턴의 팀장만 허용
+/**
+ * @param {*} interaction 
+ * @param {*} room 
+ * @desc 현재 픽 턴의 팀장만 허용
+ */
 function ensureActivePicker(interaction, room) {
   // 선픽 미정(시작 전) → 두 팀장 중 누구나 시작 가능
   if (!isPickStarted(room)) {

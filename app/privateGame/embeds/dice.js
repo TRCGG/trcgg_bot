@@ -6,7 +6,7 @@ function buildDicePlaceholderMessage(room) {
   const b = room.captainB ? `${room.captainB.tierStr ?? ''} ${room.captainB.nameTag ?? room.captainB.userId}`.trim() : '-';
 
   const embed = new EmbedBuilder()
-    .setTitle('3.1 단계: 팀원 선택(주사위) – 준비 화면')
+    .setTitle('3.1 단계: 팀원 선택(주사위) – 준비')
     .setDescription(`A팀: ${a}\nB팀: ${b}\n\n(다음 단계 UI는 곧 이어서 구현)`);
 
   const row = new ActionRowBuilder().addComponents(
