@@ -75,8 +75,8 @@ module.exports = [
       }
 
       // ✅ 테스트용 더미 참가자 9명 주입(호스트 제외)
-      const slots = Math.min(9, room.maxPlayers - room.participants.length);
-      seedParticipants(room, slots, msg.author.id, hostNameTag);
+      // const slots = Math.min(9, room.maxPlayers - room.participants.length);
+      // seedParticipants(room, slots, msg.author.id, hostNameTag);
 
       store.add(room);
       
