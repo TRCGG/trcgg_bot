@@ -1,3 +1,5 @@
+const { PermissionsBitField } = require('discord.js');
+
 /**
  * @param {Object/String} jsonData 
  * @description embed 형식의 jsondata, string 일경우 그대로 return
@@ -58,17 +60,20 @@ const getMemberNick = (msg, args) => {
  * @returns 
  */
 const checkAuth = (msg) => {
-  const roles = msg.member.roles.cache;
-  const role_names = roles.map((role) => role.name);
-  if (
-    role_names.includes("난민개발부") ||
-    role_names.includes("TRC관리자") ||
-    role_names.includes("난민스텝진")
-  ) {
-    return true;
-  } else {
-    return false;
-  }
+
+  const ALLOWED_ROLE_NAMES = new Set(['TRC관리자']);
+  const member = msg.member;
+  if (!member) return false;
+
+  // 지정 역할 보유 여부
+  const hasAllowedRole = member.roles.cache.some(r => ALLOWED_ROLE_NAMES.has(r.name));
+
+  // 길드 서버 관리 권한 또는 관리자 권한 보유 여부
+  const hasGuildManagePerm =
+    member.permissions.has(PermissionsBitField.Flags.ManageGuild) ||
+    member.permissions.has(PermissionsBitField.Flags.Administrator);
+
+  return hasAllowedRole || hasGuildManagePerm;
 };
 
 /**
