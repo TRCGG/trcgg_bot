@@ -22,19 +22,24 @@ const get_alarm_list = async(guild_id) => {
  * @description 멤버 닉네임으로 멤버 찾기
  * @returns 
  */
-const find_member_by_ninkname = async(name, guild) => {
+const find_member_by_nickname = async(name, guild) => {
 	const origin_name = name;
-	name = name.replace('/s+/g', '').toLowerCase();
+	const norm = (s) => String(s ?? '').replace(/\s+/g, '').toLowerCase();
+	const target = norm(name);
+
 	try {
 		if (!guild) {
 			return null;
 		}
 		// 멤버 전원 불러옴
-		const members = await guild.members.fetch();
-		
+		let members = guild.members.cache;
+		if(!members) {
+			members = await guild.members.fetch();
+		}
 		// 멤버 찾기
-		const member = members.find(m => 
-			m.nickname?.replace(/\s+/g, '').toLowerCase().startsWith(name) || m.user.username?.replace(/\s+/g, '').toLowerCase().startsWith(name)
+		const member = members.find(m =>
+			norm(m.nickname).startsWith(target) ||
+			norm(m.user?.username).startsWith(target)
 		);
 		return member || origin_name;
 
@@ -61,7 +66,7 @@ const notify_alarm = async(client, channel_id, guild_id) => {
 	if(alarms.alarmGames) {
 		await Promise.all(
 			alarms.alarmGames.map(async (alarm) => {
-				const member = await find_member_by_ninkname(alarm.riot_name, guild);
+				const member = await find_member_by_nickname(alarm.riot_name, guild);
 				if(member) {
 					await channel.send(game_message(member));
 				}
@@ -72,7 +77,7 @@ const notify_alarm = async(client, channel_id, guild_id) => {
 	if(alarms.alarmWins) {
 		await Promise.all(
 			alarms.alarmWins.map(async (alarm) => {
-				const member = await find_member_by_ninkname(alarm.riot_name, guild);
+				const member = await find_member_by_nickname(alarm.riot_name, guild);
 				if(member) {
 					await channel.send(win_message(member));
 				}
