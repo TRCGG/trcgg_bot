@@ -61,7 +61,7 @@ const getMemberNick = (msg, args) => {
  */
 const checkAuth = (msg) => {
 
-  const ALLOWED_ROLE_NAMES = new Set(['TRC관리자']);
+  const ALLOWED_ROLE_NAMES = new Set(['내전봇관리자']);
   const member = msg.member;
   if (!member) return false;
 
