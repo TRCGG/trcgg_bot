@@ -1,7 +1,5 @@
 const { Events } = require("discord.js");
 const replayService = require("../services/replayService");
-const championShipService = require("../services/championShipService");
-const stringUtils = require("../utils/stringUtils");
 
 /**
  * 디코 메시지 발생 이벤트
@@ -11,52 +9,45 @@ module.exports = {
   once: false,
   async execute(client, msg) {
     const prefix = "!";
+    if (!msg.inGuild()) return; // DM 차단 및 길드 내 메시지만 처리
     if (msg.author.bot) return;
     // 첨부파일이 있는 경우
     if (msg.attachments.size > 0) {
       if (msg.guild.id === "922118764437340230") return;
 
-      // 모든 첨부파일을 순회하며 처리
       for (const [id, attachment] of msg.attachments) {
         const fileName = attachment.name;
         const fileUrl = attachment.url;
 
-        if (!fileName.endsWith(".rofl")) continue; // .rofl 아니면 다음 파일로
+        if (!fileName.endsWith(".rofl")) continue; 
 
-        const guildId = stringUtils.encodeGuildId(msg.guild.id);
+        const guildId = msg.guild.id;
+        const guildName = msg.guild.name;
         const createUser = msg.member.nickname || msg.author.username;
         const fileNameWithoutExt = fileName.slice(0, -5);
+        const gameType = '1'; // 1: 내전 2: 대회
 
         try {
-          let result;
-          if (championShipCheck(fileName)) {
-            // 대회용 리플 처리
-            result = await championShipService.save(
-              fileUrl,
-              fileNameWithoutExt,
-              createUser,
-              guildId,
-              2
-            );
-          } else if (fileNameCheck(fileName)) {
-            // 일반 리플 처리
-            result = await replayService.save(
-              fileUrl,
-              fileNameWithoutExt,
-              createUser,
-              guildId,
-              1
-            );
-          } else {
-            // 형식 불일치
-            msg.reply(
-              `:red_circle:등록실패: ${fileNameWithoutExt} 잘못된 리플 파일 형식`
-            );
-            continue;
-          }
-          msg.reply(result);
+          const result = await replayService.save(
+            fileUrl,
+            fileNameWithoutExt,
+            createUser,
+            guildId,
+            gameType,
+            guildName
+          );
+
+          msg.reply(`:green_circle: 등록완료: ${fileNameWithoutExt}`);
         } catch (error) {
-          msg.reply(`오류 발생(${fileNameWithoutExt}): ${error.message}`);
+          console.error('replays error:', error);
+          if (error.status === 400) {
+            msg.reply(`:warning: 이미 등록된 리플 파일: ${fileNameWithoutExt}`);
+          } 
+          // 그 외 에러
+          else {
+            msg.reply(`:red_circle: 등록실패: ${fileNameWithoutExt}: ${error.message}`);
+          }
+
         }
       }
       return;
@@ -78,14 +69,8 @@ module.exports = {
   },
 };
 
-// 리플 파일 정규식 검사
-const fileNameCheck = (fileName) => {
-  const regex = new RegExp(/^[a-zA-Z0-9]*_\d{4}_\d{4}\.rofl$/);
-  return regex.test(fileName);
-};
-
-// 대회 리플 파일 정규식 검사
-const championShipCheck = (fileName) => {
-  const regex = new RegExp(/^[a-zA-Z0-9]*_\d{4}_\d{4}_champs\.rofl$/);
-  return regex.test(fileName);
-};
+// TO-DO 대회일경우 끝에 _champs.rofl 붙이기.
+// const championShipCheck = (fileName) => {
+//   const regex = new RegExp(/^[a-zA-Z0-9]*_\d{4}_\d{4}_champs\.rofl$/);
+//   return regex.test(fileName);
+// };

@@ -1,5 +1,5 @@
 const httpClient = require('../utils/networkUtils');
-const prefix = '/replay';
+const prefix = '/replays';
 
 /**
  * 리플레이 api
@@ -13,8 +13,8 @@ const prefix = '/replay';
  * @description 리플레이 저장
  * @returns {String} message
  */
-const post_replay = async(data, guild_id) => {
-	const url = `${prefix}/${guild_id}`;
+const post_replay = async(data) => {
+	const url = `${prefix}`;
 	return httpClient.post(url, data);
 }
 

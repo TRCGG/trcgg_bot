@@ -6,23 +6,22 @@ const stringUtils = require('../utils/stringUtils');
  */
 
 /**
- * @param {String} file_url
- * @param {String} file_name
- * @param {String} create_user
- * @param {String} guild_id
- * @param {String} game_type
  * @description 리플레이 저장
- * @returns {String} message
  */
-const save = async(file_url, file_name, create_user, guild_id, game_type) => {
+const save = async(fileUrl, fileName, createUser, guildId, gameType, guildName) => {
 	const data = {
-		fileUrl : file_url,
-		fileName : file_name, 
-		createUser : create_user,
-		game_type : game_type,
+		fileName : fileName, 
+		fileUrl : fileUrl,
+		gameType : gameType,
+		createUser : createUser,
+		guild : {
+			id: guildId,
+			name: guildName,
+			languageCode: 'ko', // default
+		}
 	}
-	const resultMessage = await replayClient.post_replay(data, guild_id);
-	return resultMessage;
+	const resultData = await replayClient.post_replay(data);
+	return resultData;
 }
 
 /**

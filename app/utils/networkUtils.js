@@ -1,31 +1,32 @@
 const BaseURL = process.env.BASE_URL;
+const BotHeader = process.env.DISCORD_BOT_SECRET;
 /**
  * fetch httpClient.js  
  */
 const httpClient = {
 
   async request(method, url, options = {}) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30초 후 요청 취소
 
     const config = {
       method,
-      headers: {'Content-Type' : 'application/json'},
-      signal: controller.signal, // AbortController 적용
+      headers: {
+        "Content-Type": "application/json",
+        "x-discord-bot": BotHeader,
+      },
+      signal: AbortSignal.timeout(45000), // 45초 후 자동 취소 
       ...options,
-    }
+    };
 
     const fullUrl = `${BaseURL}${url}`
     const cleanUrl = fullUrl.replace(/\\/g, '');
  
     try {
       const response = await fetch(cleanUrl, config);
-      clearTimeout(timeoutId); 
       
       // 응답 코드가 200이 아닐 경우
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({})); // JSON 파싱 실패 방지
-        const message = errorData?.message || 'Unknown error';
+        const message = errorData?.detail || `Unknown error `
 
         console.error('Response Error:', {
           time: new Date().toISOString(),
@@ -34,30 +35,29 @@ const httpClient = {
           data: errorData
         });
 
-        if (response.status === 404) {
-          throw new Error('404 Not Found: ' + message);
-        }
-
-        throw new Error(message);
+        const error = new Error(message);
+        error.status = response.status;
+        throw error;
       }
       const json = await response.json();
       return json.data;
     } catch (error) {
-      clearTimeout(timeoutId);
-      if(error.name === 'AbortError'){
-        console.error('요청 시간 초과');
-      } 
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        console.error('요청 시간 초과 (Timeout)');
+        throw new Error('요청 시간 초과');
+      }
       throw error;
     }
   },
 
   /**
    * @description GET Request
-   * @param {string} url - Request URL
-   * @param {Object} options - fetch Setting
    */
-  async get(url, data, options= {}) {
-    return this.request('GET', url, {...options, body: JSON.stringify(data)});
+  async get(url, params = {}, options = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const finalUrl = queryString ? `${url}?${queryString}` : url;
+    
+    return this.request('GET', finalUrl, options);
   },
 
   /**
