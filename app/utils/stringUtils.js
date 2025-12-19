@@ -10,10 +10,13 @@ const createEmbed = (jsonData) => {
   } else {
     const embed = {
       title: jsonData.title,
-      description: jsonData.description || null,
-      fields: jsonData.fields || null,
+      fields: jsonData.fields || [],
       color: jsonData.color || null,
     };
+
+    if (jsonData.description) {
+      embed.description = jsonData.description;
+    }
     return { embeds: [embed] };
   }
 };

@@ -9,21 +9,81 @@ const stringUtils = require('../utils/stringUtils');
  * @description !설명
  * @returns embed 
  */
-const get_doc_embed = async() => {
-	const embed = await managementClient.get_doc();
-	return stringUtils.createEmbed(embed);
-}
+const get_doc_embed = async () => {
+  // 1. 홈페이지 & 기본 정보
+  const field_home_value = 
+    "🌐 **[내전 봇 홈페이지 바로가기](https://gmok.kr)**\n" +
+    "> 내전 결과 및 상세 통계를 웹에서 확인하세요.";
+
+  // 2. 검색 명령어 
+  const field_search_value =
+    "`!전적 [닉네임]` : 플레이어의 전적을 검색합니다.\n" +
+    "`!장인 [챔피언]` : 챔피언별 승률/픽률 장인을 확인합니다.\n" +
+    "`!결과 [리플파일명]` : 특정 내전의 결과를 조회합니다.";
+
+  // 3. 관리자 명령어 
+  const field_admin_value =
+    "> ⚠️ **관리자 권한 필수 / 닉네임#태그 정확히 입력**\n\n" +
+    "`!부캐목록` : 등록된 모든 부계정 리스트 확인\n" +
+    "`!부캐저장 [부캐#태그/본캐#태그]` : 부계정 연동 (전적 합산)\n" +
+    "`!부캐삭제 [부캐#태그]` : 부계정 연동 해제\n" +
+    "`!탈퇴 [닉네임#태그]` : 전적 검색 제외 처리\n" +
+    "`!복귀 [닉네임#태그]` : 전적 검색 다시 활성화\n" +
+    "`!drop [리플파일명]` : 잘못된 리플 데이터 삭제";
+
+  const embedData = {
+    title: "명령어 가이드",
+    description: "봇 사용을 위한 명령어 목록입니다.\n명령어 사용 시 `[ ]` 괄호는 제외하고 입력해주세요.",
+    fields: [
+      {
+        name: "홈페이지",
+        value: field_home_value,
+        inline: false,
+      },
+      {
+        name: "일반 명령어",
+        value: field_search_value,
+        inline: false,
+      },
+      {
+        name: "관리자 전용 명령어",
+        value: field_admin_value,
+        inline: false,
+      },
+    ],
+    footer: { text: "Gmok Bot System" } 
+  };
+
+  return stringUtils.createEmbed(embedData);
+};
 
 /**
- * @param {*} msg
- * @param {*} args
  * @description !부캐목록
- * @returns {Object} Embed 형식 Json
  */
-const get_sublist_embed = async(msg, args) => {
+const get_sublist_embed = async(msg) => {
 	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
-	const embed = await managementClient.get_sublist(guild_id);
-	return stringUtils.createEmbed(embed);
+	const accounts = await managementClient.get_sublist(guild_id);
+
+	const title = "부캐목록";
+    let desc = "``` \n" + "|  부캐  |  본캐  |\n" + "\n";
+
+    accounts.forEach((data) => {
+      desc += `| ${data.subRiotName}#${data.subRiotNameTag} | ${data.mainRiotName}#${data.mainRiotNameTag} \n`;
+    });
+
+    let size = accounts.length;
+
+    desc += "\n";
+    desc += `총 : ${size} \n`;
+    desc += "```";
+
+    const embedData = {
+      title: title,
+      description: desc,
+      fields: [],
+    };
+
+	return stringUtils.createEmbed(embedData);
 }
 
 /**
@@ -38,57 +98,31 @@ const post_subaccount = async(msg, args) => {
 	const [ sub_name, sub_name_tag ] = stringUtils.splitTag(sub_full_name);
 	const [ main_name, main_name_tag ] = stringUtils.splitTag(main_full_name);
 	const data = {
-		sub_name : sub_name,
-		sub_name_tag : sub_name_tag, 
-		main_name : main_name,
-		main_name_tag : main_name_tag	
+		guildId: msg.guild.id,
+		subRiotName : sub_name,
+		subRiotTag : sub_name_tag, 
+		mainRiotName : main_name,
+		mainRiotTag : main_name_tag	
 	}
-	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
 
-	const resultMessage = await managementClient.post_subaccount(data, guild_id);
+	const resultMessage = await managementClient.post_subaccount(data);
 	return resultMessage;
 }
 
 /**
- * @param {*} delete_yn (Y/N) Y: 탈퇴 N: 복귀
- * @param {*} msg
- * @param {*} args riot_name#riot_name_tag
  * @description !탈퇴, !복귀
- * @returns {String} message
  */
-const put_accountstatus = async(delete_yn, msg, args) => {
+const put_accountstatus = async(status, msg, args) => {
 	const raw_data = args.join(" ").trim();
 	const [ riot_name, riot_name_tag ] = stringUtils.splitTag(raw_data);
 	const data = {
-		delete_yn : delete_yn,
-		riot_name : riot_name,
-		riot_name_tag : riot_name_tag
+		guildId : msg.guild.id,
+		riotName : riot_name,
+		riotNameTag : riot_name_tag,
+		status : status
 	}
-	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
 
-	const resultMessage = await managementClient.put_accountstatus(data, guild_id);
-	return resultMessage;
-}
-
-/**
- * @param {*} msg
- * @param {*} args old_name#old_name_tag/new_name#new_name_tag
- * @description !닉변
- * @returns {String} message
- */
-const put_accountname = async(msg, args) => {
-	const raw_data = args.join(" ").trim();
-	const [ old_full_name, new_full_name ] = stringUtils.splitStr(raw_data);
-	const [ old_name, old_name_tag ] = stringUtils.splitTag(old_full_name);
-	const [ new_name, new_name_tag ] = stringUtils.splitTag(new_full_name);
-	const data = {
-		old_name : old_name,
-		old_name_tag : old_name_tag, 
-		new_name : new_name,
-		new_name_tag : new_name_tag	
-	}
-	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
-	const resultMessage = await managementClient.put_accountname(data, guild_id);
+	const resultMessage = await managementClient.put_accountstatus(data);
 	return resultMessage;
 }
 
@@ -102,11 +136,11 @@ const delete_subaccount = async(msg, args) => {
 	const raw_data = args.join(" ").trim();
 	const [ sub_name, sub_name_tag ] = stringUtils.splitTag(raw_data);
 	const data = {
-		sub_name : sub_name,
-		sub_name_tag : sub_name_tag
+		guildId : msg.guild.id,
+		riotName : sub_name,
+		riotNameTag : sub_name_tag
 	}
-	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
-	const resultMessage = await managementClient.delete_subaccount(data, guild_id);
+	const resultMessage = await managementClient.delete_subaccount(data);
 	return resultMessage;
 }
 
@@ -115,7 +149,6 @@ module.exports = {
 	get_sublist_embed,
 	post_subaccount,
 	put_accountstatus,
-	put_accountname,
 	delete_subaccount,
 }
 
