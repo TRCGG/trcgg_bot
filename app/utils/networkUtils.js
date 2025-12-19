@@ -26,7 +26,7 @@ const httpClient = {
       // 응답 코드가 200이 아닐 경우
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({})); // JSON 파싱 실패 방지
-        const message = errorData?.detail || `Unknown error `
+        const message = errorData?.detail || errorData?.message || `Unknown error `;
 
         console.error('Response Error:', {
           time: new Date().toISOString(),

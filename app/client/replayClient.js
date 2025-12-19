@@ -19,18 +19,15 @@ const post_replay = async(data) => {
 }
 
 /**
- * @param {String} game_id
- * @param {String} guild_id
- * @description !drop 리플 삭제
- * @returns {String} message
+ * @description !drop 게임 기록 삭제
  */
-const delete_replay = async(game_id, guild_id) => {
-	const url = `${prefix}/${game_id}/${guild_id}`;
+const delete_game = async(gameId, guildId) => {
+	const url = `/matches/${guildId}/games/${gameId}`;
 	return httpClient.delete(url);
 }
 
 module.exports = {
 	post_replay,
-	delete_replay,
+	delete_game,
 }
 

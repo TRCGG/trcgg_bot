@@ -25,16 +25,13 @@ const save = async(fileUrl, fileName, createUser, guildId, gameType, guildName) 
 }
 
 /**
- * @param {String} msg
- * @param {String} args
- * @description !drop 리플 삭제
- * @returns {String} message
+ * @description !drop 게임 기록 삭제
  */
 const delete_replay = async(msg, args) => {
 	const game_id = args.join(" ").trim();
 	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
-	const resultMessage = await replayClient.delete_replay(game_id, guild_id);
-	return resultMessage;
+	const result = await replayClient.delete_game(game_id, guild_id);
+	return result;
 }
 
 module.exports = {

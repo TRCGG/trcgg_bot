@@ -2,6 +2,7 @@ const manageService = require("../services/managementService");
 const replayService = require("../services/replayService");
 const commandUtils = require("../utils/commandUtilis");
 const stringUtils = require('../utils/stringUtils');
+const res = require('../utils/responseHandler');
 
 /**
  * 관리자 명령어 
@@ -78,11 +79,14 @@ module.exports = [
   {
     name: "drop",
     run: async (client, msg, args) => {
-			if (!stringUtils.checkAuth(msg)) {
-				msg.reply("권한 없음");
-        return;
-			}
-			commandUtils.execute(replayService, "delete_replay", msg, args)
+			if (!stringUtils.checkAuth(msg)) return res.noAuth(msg);
+      try {
+        const result = await replayService.delete_replay(msg, args);
+        console.log(result);
+        res.success(msg, `삭제완료: ${result.id}`);
+      } catch (err) {
+        res.error(msg, err);
+      }
     },
   },
   {
