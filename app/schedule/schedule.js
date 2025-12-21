@@ -1,9 +1,5 @@
 const cron = require("node-cron");
-const TRC_GUILD_ID = process.env.TRC_GUILD_ID;
 const TRC_CHANNEL_ID = process.env.TRC_CHANNEL_ID;
-const TRC_ALARM_CHANNEL_ID = process.env.TRC_ALARM_CHANNEL_ID;
-const eventService = require("../services/eventService");
-const inhouseService = require("../services/inhouseService");
 
 /**
  * @todo TO-DO 동적 스케쥴 처리로 변경 필요
