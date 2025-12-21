@@ -1,55 +1,52 @@
-const recordService = require("../services/recordService");
-const commandUtils = require("../utils/commandUtilis");
-const stringUtils = require('../utils/stringUtils');
+const statsService = require("../services/statisticsService");
+const stringUtils = require("../utils/stringUtils");
+const res = require("../utils/responseHandler");
 
 /**
  * 통계 검색 명령어
  */
 module.exports = [
   {
-    name: "통계",
+    name: "장인",
     run: async (client, msg, args) => {
-      let type=undefined, date = undefined;
-
-      if (args.length === 2) {
-        [type, date] = args;
-      } else if (args.length === 1) {
-        type = args[0];
-      } else {
-        msg.reply("잘못된 형식");
+      try {
+        const result = await statsService.get_master_of_champion_embed(
+          msg,
+          args
+        );
+        msg.reply(result);
+      } catch (error) {
+        res.error(msg, error);
       }
-
-      if(type === "게임"){
-        await commandUtils.execute(recordService, "get_gamestat_record_embed", msg, date);
-      }else if(type ==="챔프"){
-        await commandUtils.execute(recordService, "get_champstat_record_embed", msg, date);
-      }else {
-        msg.reply("명령어는 !통계 (게임 or 챔프)");
-      }
-    },
-  },
-  {
-    name: "라인",
-    run: async (client, msg, args) => {
-    	await commandUtils.execute(recordService, "get_linestat_record_embed", msg, args);
     },
   },
   {
     name: "클랜통계",
     run: async (client, msg, args) => {
-			// 권한체크
-      if (!stringUtils.checkAuth(msg)) {
-        msg.reply("권한 없음");
-        return;
+      if (!stringUtils.checkAuth(msg)) return res.noAuth(msg);
+      const year = args[0];
+      const month = args[1];
+      const guildId = stringUtils.encodeGuildId(msg.guild.id);
+
+      if ((year && !month) || (!year && month)) {
+      return msg.reply(
+        "사용법이 올바르지 않습니다.\n" + 
+        "- 전체 조회: `!클랜통계`\n" + 
+        "- 특정 월 조회: `!클랜통계 2025 12`"
+      );
+    }
+
+      const processingMsg = await msg.reply(
+        "데이터를 수집하고 엑셀을 생성 중입니다... ⏳"
+      );
+
+      try {
+        await statsService.send_excel_file(msg, year, month, guildId);
+        await processingMsg.delete().catch(() => {});
+      } catch (error) {
+        console.error(error);
+        msg.reply("데이터를 가져오는 중 오류가 발생했습니다.");
       }
-      await recordService.get_clanstat_record_embed(msg, args)
-        .then((result) => {
-        })
-        .catch((err) => {
-          console.log(err);
-          msg.reply(err.message);
-        });
     },
   },
-  
 ];

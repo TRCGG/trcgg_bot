@@ -35,34 +35,10 @@ const get_result_record = async(gameId, guild_id) => {
   return httpClient.get(url);
 }
 
-// /**
-//  * @param champ_name
-//  * @param guild_id
-//  * @description !장인 Embed
-//  * @returns
-//  */
-// const get_master_record = async(champ_name, guild_id) => {
-//   const url = `${prefix}/master/embed/${champ_name}/${guild_id}`;
-//   return httpClient.get(url);
-// }
-
-/**
- * @param year
- * @param month
- * @param guild_id
- * @description !클랜통계 Embed
- * @returns
- */
-const get_clanstat_record = async(year, month, guild_id) => {
-  const url = `${prefix}/clanstat/embed/${year}/${month}/${guild_id}`;
-  return httpClient.get(url);
-}
-
 module.exports = {
   get_all_record,
   get_recent_record,
   get_result_record,
-  get_clanstat_record,
 }
 
 

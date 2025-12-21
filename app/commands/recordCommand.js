@@ -1,5 +1,4 @@
 const recordService = require("../services/recordService");
-const commandUtils = require("../utils/commandUtilis");
 const res = require('../utils/responseHandler');
 
 /**
