@@ -1,18 +1,15 @@
 const guildClient = require('../client/guildClient');
 const stringUtils = require('../utils/stringUtils');
 const { AttachmentBuilder } = require('discord.js');
-const fs = require('fs');
 const { createObjectCsvStringifier } = require('csv-writer');
 /**
  * 길드 관련 api call service
  */
 
 /**
- * @param {*} client 
- * @description 길드 목록 가져오기
- * @returns 
+ * @description 내전봇이 디스코드에 등록되어 있는 길드 목록 가져오기
  */
-const get_guild_list_data = async (client) => {
+const get_discord_guild_list_data = async (client) => {
   const guilds = await client.guilds.fetch();
 
   const guildList = [];
@@ -22,7 +19,6 @@ const get_guild_list_data = async (client) => {
     guildList.push({
       id: guild.id,
       name: guild.name,
-			lan_id: 'ko' // default ko
     });
   }
 
@@ -30,9 +26,7 @@ const get_guild_list_data = async (client) => {
 };
 
 /**
- * @param {*} guildList 
  * @description 길드 목록 포맷팅
- * @returns 
  */
 const format_guild_list = (guildList) => {
   return guildList.guilds.map(guild => `**${guild.name}** - ${guild.id}`).join('\n');
@@ -40,57 +34,38 @@ const format_guild_list = (guildList) => {
 
 /**
  * @param {*} client 
- * @description 길드 목록 보여주기
+ * @description 내전봇이 있는 디스코드 길드 목록 보여주기
  * @param {*} msg 
  */
-const show_and_insert_guild_list = async (client) => {
-  const guildList = await get_guild_list_data(client);
+const show_guild_list = async (client) => {
+  const guildList = await get_discord_guild_list_data(client);
   const formattedList = format_guild_list(guildList);
-
-	const post_guild = await guildClient.post_guild(guildList.guilds);
-
 	return formattedList;
 };
 
 /**
- * @param {*} client 
- * @param {*} msg 
- * @description 길드 추가
- * @returns 
+ * @desc DB에 저장되어있는 길드 목록
  */
-const post_guild = async (guilds) => {
-  const result = await guildClient.post_guild(guilds);
-  return result;
+const get_guilds_list = async (client) => {
+	const guilds = await guildClient.get_guilds();
+	const description = guilds.map((guild) => {
+    const date = new Date(guild.createDate).toISOString().split('T')[0];
+    const status = guild.isDeleted ? "❌" : "✅";
+    
+    return `${guild.name} (\`${guild.id}\`)\n${date} ${status}`;
+  }).join('\n\n'); // 항목 간 줄바꿈
+
+  return stringUtils.createEmbed({
+    title: `DB 길드 목록 (총 ${guilds.length}개)`,
+    description: description,
+    color: 0x00ff00,
+  });
 }
 
 /**
- * @description 길드 수정
- * @returns 
+ * @description 디스코드 길드 떠나기
  */
-const put_guild_lang = async (lang, guild_id) => {
-	const data = {
-		lan_id: lang,
-		guild_id : guild_id
-	};
-	
-	const result = await guildClient.put_guild_lang(data); // 길드 수정 API 호출
-	let message = "";
-	if(!result) {
-		message =("길드 언어 설정 중 오류가 발생했습니다.");
-	} else {
-		message =(`길드 언어가 ${lang}로 설정되었습니다.`);
-	}
-  return message;
-}
-
-/**
- * @param {*} client 
- * @param {*} msg 
- * @param {*} args 
- * @description 길드 삭제
- * @returns 
- */
-const delete_guild = async (client, msg, args) => {
+const leave_discord_guild = async (client, msg, args) => {
 	const guild_id = args[0];
 	if (!guild_id) {
 		msg.reply("길드 ID를 입력하세요.");
@@ -100,10 +75,7 @@ const delete_guild = async (client, msg, args) => {
   try {
 		await guild.leave();
 		msg.reply(`길드 ${guild.name}에서 떠났습니다.`);
-
-		const encode_guild_id = stringUtils.encodeGuildId(guild_id); // 길드 ID 가져오기
 		
-		await guildClient.delete_guild(encode_guild_id); // 길드 삭제 API 호출
 	} catch (error) {
 		console.error("Error leaving guild:", error);
 		msg.reply("길드를 떠나는 중 오류가 발생했습니다.");
@@ -111,9 +83,6 @@ const delete_guild = async (client, msg, args) => {
 }
 
 /**
- * @param {*} client
- * @param {*} msg
- * @param {*} args
  * @description 길드 멤버 목록을 액셀 파일로 보여줍니다.
  */
 const show_guild_member_list = async (client, msg, args) => {
@@ -165,11 +134,10 @@ const show_guild_member_list = async (client, msg, args) => {
 }
 
 module.exports = {
-	show_and_insert_guild_list,
+	get_guilds_list,
+	show_guild_list,
 	show_guild_member_list,
-	post_guild,
-	put_guild_lang,
-	delete_guild,
+	leave_discord_guild,
 };
 
 

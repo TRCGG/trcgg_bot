@@ -1,28 +1,16 @@
 const httpClient = require("../utils/networkUtils");
-const prefix = "/guild";
+const prefix = "/guilds";
 
 /**
   guild api call
  */
 
 /**
- * @param {*} data
- * @description guild 추가
- * @returns
+ * @desc DB에 저장되어있는 길드 목록
  */
-const post_guild = async (data) => {
+const get_guilds = async () => {
   const url = `${prefix}`;
-  return httpClient.post(url, data);
-};
-
-/**
- * @param {*} data 
- * @description guild 언어 설정
- * @returns 
- */
-const put_guild_lang = async (data) => {
-  const url = `${prefix}/lang`;
-  return httpClient.put(url, data);
+  return httpClient.get(url);
 }
 
 /**
@@ -30,13 +18,12 @@ const put_guild_lang = async (data) => {
  * @description guild 삭제
  * @returns 
  */
-const delete_guild = async (guild_id) => {
-  const url = `${prefix}/${guild_id}`;
+const delete_guild = async (guildId) => {
+  const url = `${prefix}/${guildId}`;
   return httpClient.delete(url);
 };
 
 module.exports = {
-  post_guild,
-  put_guild_lang,
+  get_guilds,
   delete_guild,
 };

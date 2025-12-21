@@ -1,8 +1,7 @@
-const commandUtils = require("../utils/commandUtilis");
 const stringUtils = require("../utils/stringUtils");
 const guildService = require("../services/guildService");
-const selectBoxUtils = require("../utils/selectBoxUtils");
 const ADMIN_ID = process.env.ADMIN_ID;
+const res = require('../utils/responseHandler');
 
 
 /**
@@ -11,46 +10,53 @@ const ADMIN_ID = process.env.ADMIN_ID;
 module.exports = [
   {
     name: "길드목록",
-    description: "길드 관련 명령어",
+    description: "DB저장되어있는 길드 목록",
     run: async (client, msg, args) => {
-      if(!msg.author.id === ADMIN_ID) {
-        msg.reply("권한 없음");
-        return;
+      if(!msg.author.id === ADMIN_ID) return res.noAuth(msg);
+      try {
+        const result = await guildService.get_guilds_list();
+        await msg.reply(result);
+      } catch (error) {
+        res.error(msg, error);
       }
-      await commandUtils.executeWithClient(guildService, "show_and_insert_guild_list", client, msg, args);
+    }
+  },
+  {
+    name: "디스코드길드목록",
+    description: "내전봇이 디스코드에 있는 길드 목록",
+    run: async (client, msg, args) => {
+      if(!msg.author.id === ADMIN_ID) return res.noAuth(msg);
+      try {
+        const result = await guildService.show_guild_list(client);
+        await msg.reply(result);
+      } catch (error) {
+        res.error(msg, error);
+      }
     },
   },
   {
     name:"길드떠나기",
     description: "봇이 길드 서버를 떠남",
     run: async (client, msg, args) => {
-      if(!msg.author.id === ADMIN_ID) {
-        msg.reply("권한 없음");
-        return;
+      if(!msg.author.id === ADMIN_ID) return res.noAuth(msg);
+      try {
+        const result = await guildService.leave_discord_guild(client, msg, args);
+        await msg.reply(result);
+      } catch (error) {
+        res.error(msg, error);
       }
-      await commandUtils.exec(guildService, "delete_guild", client, msg, args);
-    },
-  },
-  {
-    name:"lan",
-    description: "길드 언어 설정",
-    run: async (client, msg, args) => {
-      if(!stringUtils.checkAuth(msg)) {
-        msg.reply("권한 없음");
-        return;
-      }
-      await commandUtils.exec(selectBoxUtils, "lang_box_message", client, msg, args);
     },
   },
   {
     name: "클랜원목록",
     description: "액셀파일로 길드원 목록을 보여줍니다.",
     run: async (client, msg, args) => {
-      if(!stringUtils.checkAuth(msg)) {
-        msg.reply("권한 없음");
-        return;
+      if (!stringUtils.checkAuth(msg)) return res.noAuth(msg);
+      try {
+        const result = await guildService.show_guild_member_list(client, msg, args);
+      } catch (error) {
+        res.error(msg, error);
       }
-      await commandUtils.exec(guildService, "show_guild_member_list", client, msg, args);
     },
   }
 ];
