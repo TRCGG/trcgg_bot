@@ -1,24 +1,28 @@
 const { PermissionsBitField } = require('discord.js');
 
 /**
- * @param {Object/String} jsonData 
+ * @param {Object/String} embedData 
  * @description embed 형식의 jsondata, string 일경우 그대로 return
  */
-const createEmbed = (jsonData) => {
-  if (typeof jsonData === "string") {
-    return jsonData;
-  } else {
-    const embed = {
-      title: jsonData.title,
-      fields: jsonData.fields || [],
-      color: jsonData.color || null,
-    };
-
-    if (jsonData.description) {
-      embed.description = jsonData.description;
-    }
-    return { embeds: [embed] };
+const createEmbed = (embedData) => {
+  // 1. 단순 문자열인 경우 (에러 메시지 등)
+  if (typeof embedData === "string") {
+    return embedData; 
   }
+
+  const embed = {
+    title: embedData.title || null,
+    description: embedData.description || null,
+    url: embedData.url || null,
+    color: embedData.color || [], 
+    fields: embedData.fields || [],
+    footer: embedData.footer || null,
+    thumbnail: embedData.thumbnail ? { url: embedData.thumbnail } : null,
+    image: embedData.image ? { url: embedData.image } : null,
+    timestamp: embedData.timestamp ? new Date().toISOString() : null,
+  };
+
+  return { embeds: [embed] };
 };
 
 /**
