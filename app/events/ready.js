@@ -11,6 +11,6 @@ module.exports = {
   async execute(client) {
     console.log(`Logged in as ${client.user.tag}!`);
     schedule.cronSchedule(client);
-    inhouseService.setInhouseLogChannelWithServer(client);
+    // inhouseService.setInhouseLogChannelWithServer(client);
   },
 };
