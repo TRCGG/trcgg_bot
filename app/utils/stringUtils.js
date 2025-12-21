@@ -14,7 +14,7 @@ const createEmbed = (embedData) => {
     title: embedData.title || null,
     description: embedData.description || null,
     url: embedData.url || null,
-    color: embedData.color || [], 
+    color: embedData.color || null, 
     fields: embedData.fields || [],
     footer: embedData.footer || null,
     thumbnail: embedData.thumbnail ? { url: embedData.thumbnail } : null,
