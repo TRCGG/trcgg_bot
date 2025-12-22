@@ -120,14 +120,20 @@ const splitDate = (date) => {
  * @returns 
  */
 const splitStr = (str) => {
+  const msg =
+    "입력 형식을 확인해주세요.\n\n" +
+    "사용 예시:\n" +
+    "```fix\n부캐닉네임#태그/본캐닉네임#태그\n```\n" +
+    "> 띄어쓰기와 대소문자, 구분자(`/`)를 정확히 입력해주세요.";
+
   if (!str) {
-    throw new Error("입력된 문자열이 비어있습니다");
+    throw new Error(msg);
   }
 
   const [sub_name, main_name] = str.split('/');
 
   if (!sub_name || !main_name) {
-    throw new Error("잘못된 형식 !doc를 참고해주세요");
+    throw new Error(msg);
   }
   return [sub_name, main_name];
 };
@@ -138,14 +144,18 @@ const splitStr = (str) => {
 * @returns 
 */
 const splitTag = (str) => {
+  const msg =
+  "입력 형식을 확인해주세요. \n\n" +
+  "사용 예시:\n" +
+  "```fix\n닉네임#태그\n```\n" +
+  "> 띄어쓰기와 대소문자를 정확히 입력해주세요.";
   if (!str) {
-    throw new Error("입력값이 비어있습니다");
+    throw new Error(msg);
   }
   const [name, name_tag] = str.split('#');
 
   if (!name || !name_tag) {
-    console.log("잘못된 태그 형식:", str);
-    throw new Error("닉네임#태그 값을 입력해주세요");
+    throw new Error(msg);
   }
 
   return [name, name_tag];

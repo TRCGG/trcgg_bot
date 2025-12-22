@@ -176,6 +176,9 @@ const get_all_record_embed = async(msg, args) => {
  */
 const get_result_record_embed = async(msg, args) => {
   const game_id = args.join(" ");
+  if(!game_id) {
+    throw new Error("Game Id를 입력해주세요. (ex: RPY-20260205-xxxxxx-001)");
+  }
   const guild_id = stringUtils.encodeGuildId(msg.guild.id);
   const game_data = await recordClient.get_result_record(game_id, guild_id);
 

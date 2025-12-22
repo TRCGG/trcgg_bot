@@ -29,6 +29,9 @@ const save = async(fileUrl, fileName, createUser, guildId, gameType, guildName) 
  */
 const delete_replay = async(msg, args) => {
 	const game_id = args.join(" ").trim();
+	if(!game_id){	
+		throw new Error("Game Id를 입력해주세요. (ex: RPY-20260205-xxxxxx-001)");
+	}
 	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
 	const result = await replayClient.delete_game(game_id, guild_id);
 	return result;

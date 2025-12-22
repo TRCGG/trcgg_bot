@@ -29,12 +29,23 @@ module.exports = [
       const guildId = stringUtils.encodeGuildId(msg.guild.id);
 
       if ((year && !month) || (!year && month)) {
-      return msg.reply(
-        "사용법이 올바르지 않습니다.\n" + 
-        "- 전체 조회: `!클랜통계`\n" + 
-        "- 특정 월 조회: `!클랜통계 2025 12`"
-      );
-    }
+        return msg.reply(
+          "사용법이 올바르지 않습니다.\n" +
+            "- 전체 조회: `!클랜통계`\n" +
+            "- 특정 월 조회: `!클랜통계 2025 12`"
+        );
+      }
+
+      if (year && month) {
+        const m = Number(month);
+        const y = Number(year);
+
+        if (isNaN(y) || isNaN(m) || m < 1 || m > 12) {
+          return msg.reply(
+            "날짜 형식이 올바르지 않습니다.\n(월은 1~12 사이의 숫자여야 합니다)"
+          );
+        }
+      }
 
       const processingMsg = await msg.reply(
         "데이터를 수집하고 엑셀을 생성 중입니다... ⏳"

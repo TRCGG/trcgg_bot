@@ -16,6 +16,10 @@ const get_master_of_champion_embed = async (msg, args) => {
     guild_id
   );
 
+  if(champ_data.length === 0) {
+    return `${champ_name} 데이터가 없습니다.`;
+  }
+
   // 1. 유동적 승률 컷라인 계산
   const maxPlayCount = Math.max(...champ_data.map((d) => d.totalCount));
 
@@ -80,6 +84,10 @@ const get_master_of_champion_embed = async (msg, args) => {
  */
 const send_excel_file = async (msg, year, month, guildId) => {
   const userData = await statisticsClient.get_user_data(year, month, guildId);
+  if(userData.length === 0) {
+    msg.reply(`${year} ${month} 해당 데이터가 없습니다.`);
+    return;
+  }
 
   try {
     // 1. 데이터 가공 (엑셀에 들어갈 형태로 변환)
