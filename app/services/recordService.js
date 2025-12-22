@@ -153,7 +153,7 @@ const get_all_record_embed = async(msg, args) => {
   const frontendUrl = process.env.NODE_ENV === 'development' 
 ? 'https://dev.gmok.kr' 
 : 'https://gmok.kr';
-  const homepageUrl = `${frontendUrl}/summoners/${member.riotName}/${member.riotNameTag}`;
+  const homepageUrl = encodeURI(`${frontendUrl}/summoners/${member.riotName}/${member.riotNameTag}`);
 
   const embedData = {
     title: `${member.riotName}#${member.riotNameTag}`,
