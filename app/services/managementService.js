@@ -94,8 +94,8 @@ const get_sublist_embed = async(msg) => {
  * @returns {string} message
  */
 const post_subaccount = async(msg, args) => {
-	const raw_data = args.join(" ").trim();
-	const [ sub_full_name, main_full_name ] = stringUtils.splitStr(raw_data);
+	const nick_name = args.join(" ").trim();
+	const [ sub_full_name, main_full_name ] = stringUtils.splitStr(nick_name);
 	const [ sub_name, sub_name_tag ] = stringUtils.splitTag(sub_full_name);
 	const [ main_name, main_name_tag ] = stringUtils.splitTag(main_full_name);
 	const data = {
@@ -114,8 +114,8 @@ const post_subaccount = async(msg, args) => {
  * @description !탈퇴, !복귀
  */
 const put_accountstatus = async(status, msg, args) => {
-	const raw_data = args.join(" ").trim();
-	const [ riot_name, riot_name_tag ] = stringUtils.splitTag(raw_data);
+	const nick_name = args.join(" ").trim();
+	const [ riot_name, riot_name_tag ] = stringUtils.splitTag(nick_name);
 	const data = {
 		guildId : msg.guild.id,
 		riotName : riot_name,
@@ -134,8 +134,8 @@ const put_accountstatus = async(status, msg, args) => {
  * @returns {String} message
  */
 const delete_subaccount = async(msg, args) => {
-	const raw_data = args.join(" ").trim();
-	const [ sub_name, sub_name_tag ] = stringUtils.splitTag(raw_data);
+	const nick_name = args.join(" ").trim();
+	const [ sub_name, sub_name_tag ] = stringUtils.splitTag(nick_name);
 	const data = {
 		guildId : msg.guild.id,
 		riotName : sub_name,
