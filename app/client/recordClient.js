@@ -11,7 +11,7 @@ const prefix = '/matches';
 const get_all_record = async(riotName, riotNameTag, guildId) => {
   let url = `${prefix}/${guildId}/${riotName}/dashboard`;
   if(riotNameTag){
-    url = `${url}?riot_name_tag=${riotNameTag}`;
+    url = `${url}?riotNameTag=${riotNameTag}`;
   }
   return httpClient.get(url);
 }
@@ -19,10 +19,10 @@ const get_all_record = async(riotName, riotNameTag, guildId) => {
 /**
  * @description !최근 게임 조회
  */ 
-const get_recent_record = async(riotName, riot_name_tag, guildId) => {
+const get_recent_record = async(riotName, riotNameTag, guildId) => {
   let url = `${prefix}/${guildId}/${riotName}/games`;
-  if(riot_name_tag){
-    url = `${url}?riot_name_tag=${riot_name_tag}`;
+  if(riotNameTag){
+    url = `${url}?riotNameTag=${riotNameTag}`;
   }
   return httpClient.get(url);
 }

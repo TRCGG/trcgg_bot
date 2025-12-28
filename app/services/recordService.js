@@ -11,12 +11,28 @@ const stringUtils = require('../utils/stringUtils');
  */
 const get_all_record_embed = async(msg, args) => {
   const [riotName, riotNameTag] = stringUtils.getMemberNick(msg, args);
-  if (riotName.length < 2 || riotNameTag) {
-    return "✅ 닉네임 태그 모두 두 글자 이상 입력해주세요";
+  if (!riotName || riotName.length < 2) {
+    return "닉네임은 두 글자 이상 입력해주세요";
   }
+  if (riotNameTag && riotNameTag.length < 2) {
+    return "태그는 두 글자 이상 입력해주세요";
+  }
+
   const guildId = stringUtils.encodeGuildId(msg.guild.id);
-  const result = await recordClient.get_all_record(riotName, riotNameTag, guildId);
-  const games = await recordClient.get_recent_record(riotName, riotNameTag, guildId);
+
+  let result, games;
+  try {
+    [result, games] = await Promise.all([
+      recordClient.get_all_record(riotName, riotNameTag, guildId),
+      recordClient.get_recent_record(riotName, riotNameTag, guildId),
+    ]);
+  } catch (error) {
+    if (error?.message === 'guild member not found') {
+      const tagDisplay = riotNameTag ? `#${riotNameTag}` : '';
+      throw new Error(`**${riotName}${tagDisplay}** 검색 결과가 없습니다.`);
+    }
+    throw error;
+  }
 
   if (!result) {
     return "데이터를 찾지 못했습니다";

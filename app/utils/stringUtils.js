@@ -32,29 +32,25 @@ const createEmbed = (embedData) => {
  * @returns 
  */
 const getMemberNick = (msg, args) => {
-  let riot_name = null;
-  let riot_name_tag = null;
-  let riot_name_with_tag = null;
-  if (args[0] === undefined) {
-    if (msg.member.nickname !== undefined) {
-      riot_name = msg.member.nickname;
-      riot_name = riot_name.split("/")[0];
-      riot_name_with_tag = riot_name.split("#");
-      if(riot_name_with_tag.length > 1) {
-        return [riot_name_with_tag[0].trim(), riot_name_with_tag[1].trim()];
-      } else {
-        return [riot_name_with_tag[0].trim(), null];
-      }
-    } else {
+  if (!args || args.length === 0) {
+    if (!msg.member.nickname) { 
       throw new Error("별명 설정 필요");
     }
-  } else {
+    
+    let riot_name = msg.member.nickname.split("/")[0];
+    const riot_name_with_tag = riot_name.split("#");
+    
+    return [
+      riot_name_with_tag[0].trim(), 
+      riot_name_with_tag[1] ? riot_name_with_tag[1].trim() : null
+    ];
+  } 
+
+  else {
     const full_name = args.join(" ");
     if (full_name.includes("#")) {
-      [riot_name, riot_name_tag] = full_name.split("#");
-      riot_name = riot_name.trim();
-      riot_name_tag = riot_name_tag.trim();
-      return [riot_name, riot_name_tag];
+      const [name, tag] = full_name.split("#");
+      return [name.trim(), tag.trim()];
     } else {
       return [full_name.trim(), null];
     }
