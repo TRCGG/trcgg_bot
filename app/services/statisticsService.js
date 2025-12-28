@@ -17,7 +17,7 @@ const get_master_of_champion_embed = async (msg, args) => {
   );
 
   if(champ_data.length === 0) {
-    return `${champ_name} 데이터가 없습니다.`;
+    return `${champ_name} 검색 결과가 없습니다.`;
   }
 
   // 1. 유동적 승률 컷라인 계산
