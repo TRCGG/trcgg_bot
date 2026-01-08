@@ -37,7 +37,12 @@ module.exports = {
             guildName
           );
 
-          msg.reply(`:green_circle: 등록완료: ${fileNameWithoutExt}`);
+          let replayCode = fileNameWithoutExt;
+          if(result.replayCode){
+            replayCode = result.replayCode;
+          }
+
+          msg.reply(`:green_circle: 등록완료: ${replayCode}`);
         } catch (error) {
           console.error('replays error:', error);
           if (error.status === 400) {
