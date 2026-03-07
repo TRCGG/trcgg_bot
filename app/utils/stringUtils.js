@@ -171,7 +171,7 @@ const validateTag = (str) => {
 
   if (!pattern.test(str)) {
     console.log("유효하지 않은 태그:", str);
-    throw new Error("유요하지 않은 태그");
+    throw new Error("유효하지 않은 태그");
   }
 
   return true;
