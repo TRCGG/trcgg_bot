@@ -1,6 +1,6 @@
 const statisticsClient = require("../client/statisticsClient");
 const stringUtils = require("../utils/stringUtils");
-const xlsx = require('xlsx');
+const ExcelJS = require('exceljs');
 
 /**
  * @param {*} msg
@@ -100,23 +100,21 @@ const send_excel_file = async (msg, year, month, guildId) => {
     }));
 
     // 2. 워크북 및 워크시트 생성
-    const worksheet = xlsx.utils.json_to_sheet(excelData);
-    
-    // 컬럼 너비 자동 조절 (선택 사항)
-    const wscols = [
-      { wch: 25 }, // 닉네임
-      { wch: 10 }, // 총 게임 수
-      { wch: 5 },  // 승
-      { wch: 5 },  // 패
-      { wch: 10 }, // 승률
-    ];
-    worksheet['!cols'] = wscols;
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('UserStats');
 
-    const workbook = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(workbook, worksheet, 'UserStats');
+    worksheet.columns = [
+      { header: '닉네임',    key: '닉네임',    width: 25 },
+      { header: '총 게임 수', key: '총 게임 수', width: 10 },
+      { header: '승',        key: '승',        width: 5  },
+      { header: '패',        key: '패',        width: 5  },
+      { header: '승률 (%)',  key: '승률 (%)',  width: 10 },
+    ];
+
+    worksheet.addRows(excelData);
 
     // 3. 엑셀 파일 버퍼 생성
-    const excelBuffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    const excelBuffer = await workbook.xlsx.writeBuffer();
 
     // 4. 파일명 생성 (년/월 유무에 따라 변경)
     let fileName = '전적통계.xlsx';
