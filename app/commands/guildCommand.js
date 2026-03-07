@@ -12,7 +12,7 @@ module.exports = [
     name: "길드목록",
     description: "DB저장되어있는 길드 목록",
     run: async (client, msg, args) => {
-      if(!msg.author.id === ADMIN_ID) return res.noAuth(msg);
+      if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
         const result = await guildService.get_guilds_list();
         await msg.reply(result);
@@ -25,7 +25,7 @@ module.exports = [
     name: "디스코드길드목록",
     description: "내전봇이 디스코드에 있는 길드 목록",
     run: async (client, msg, args) => {
-      if(!msg.author.id === ADMIN_ID) return res.noAuth(msg);
+      if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
         const result = await guildService.show_guild_list(client);
         await msg.reply(result);
@@ -38,7 +38,7 @@ module.exports = [
     name:"길드떠나기",
     description: "봇이 길드 서버를 떠남",
     run: async (client, msg, args) => {
-      if(!msg.author.id === ADMIN_ID) return res.noAuth(msg);
+      if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
         const result = await guildService.leave_discord_guild(client, msg, args);
         await msg.reply(result);
