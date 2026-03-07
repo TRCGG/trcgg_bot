@@ -1,5 +1,6 @@
 const { Events } = require("discord.js");
 const replayService = require("../services/replayService");
+const { BotError } = require("../utils/errors");
 
 /**
  * 디코 메시지 발생 이벤트
@@ -44,15 +45,12 @@ module.exports = {
 
           msg.reply(`:green_circle: 등록완료: ${replayCode}`);
         } catch (error) {
-          console.error('replays error:', error);
-          if (error.status === 400) {
+          if (error instanceof BotError && error.status === 400) {
             msg.reply(`:warning: 이미 등록된 리플 파일: ${fileNameWithoutExt}`);
-          } 
-          // 그 외 에러
-          else {
-            msg.reply(`:red_circle: 등록실패: ${fileNameWithoutExt}: ${error.message}`);
+          } else {
+            console.error('replays error:', error);
+            msg.reply(`:red_circle: 등록실패: ${fileNameWithoutExt}`);
           }
-
         }
       }
       return;

@@ -55,8 +55,8 @@ module.exports = [
         await statsService.send_excel_file(msg, year, month, guildId);
         await processingMsg.delete().catch(() => {});
       } catch (error) {
-        console.error(error);
-        msg.reply("데이터를 가져오는 중 오류가 발생했습니다.");
+        await processingMsg.delete().catch(() => {});
+        res.error(msg, error);
       }
     },
   },

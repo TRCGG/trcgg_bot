@@ -12,11 +12,7 @@ module.exports = [
         const result = await recordService.get_all_record_embed(msg, args);
         msg.reply(result);
       } catch (error) {
-        if (error?.message && error.message.includes("검색 결과가 없습니다")) {
-          msg.reply(error.message);
-        } else {
-          res.error(msg, error);
-        }
+        res.error(msg, error);
       }
     },
   },
@@ -27,8 +23,8 @@ module.exports = [
         const result = await recordService.get_result_record_embed(msg, args);
         msg.reply(result);
       } catch (error) {
-        if(error?.message === 'Game not found'){
-          const text = args.join(" "); 
+        if (error?.message === 'Game not found') {
+          const text = args.join(" ");
           msg.reply(`**${text}** 검색 결과가 없습니다.`);
         } else {
           res.error(msg, error);

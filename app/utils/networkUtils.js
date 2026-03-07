@@ -1,3 +1,5 @@
+const { BotError } = require('./errors');
+
 const BaseURL = process.env.BASE_URL;
 const BotHeader = process.env.DISCORD_BOT_SECRET;
 /**
@@ -35,9 +37,7 @@ const httpClient = {
           data: errorData
         });
 
-        const error = new Error(message);
-        error.status = response.status;
-        throw error;
+        throw new BotError(message, response.status);
       }
       const json = await response.json();
       return json.data;
