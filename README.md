@@ -24,15 +24,13 @@ trcgg_bot/
 │   │   ├── recordCommand.js      # 전적, 결과
 │   │   ├── statisticsCommand.js  # 장인, 클랜통계
 │   │   ├── manageCommand.js      # 부캐 관리, 탈퇴/복귀, drop, doc
-│   │   ├── guildCommand.js       # 길드 관리 (관리자 전용)
-│   │   └── inhouseCommand.js     # 내전 관련 (일부 미사용)
+│   │   └── guildCommand.js       # 길드 관리 (관리자 전용)
 │   ├── services/                 # 비즈니스 로직 레이어
 │   │   ├── recordService.js      # 전적 Embed 생성
 │   │   ├── replayService.js      # 리플레이 저장/삭제
 │   │   ├── statisticsService.js  # 통계 및 엑셀 생성
 │   │   ├── managementService.js  # 부캐, 계정 상태 관리
-│   │   ├── guildService.js       # 길드 목록, 클랜원 관리
-│   │   └── inhouseService.js     # 내전 Embed 생성
+│   │   └── guildService.js       # 길드 목록, 클랜원 관리
 │   ├── client/                   # API 호출 레이어
 │   │   ├── recordClient.js       # 전적 API (/matches)
 │   │   ├── replayClient.js       # 리플레이 API (/replays)
@@ -50,11 +48,7 @@ trcgg_bot/
 │       ├── stringUtils.js        # 공통 유틸 (Embed 생성, 닉네임 파싱, 권한 체크 등)
 │       ├── responseHandler.js    # 성공/에러/권한없음 응답 처리
 │       ├── commandUtilis.js      # 명령어 공통 유틸
-│       ├── inhouseButtonUtils.js         # 내전 버튼 UI 생성
-│       ├── inhouseButtonInteraction.js   # 내전 버튼 이벤트 처리
-│       ├── inhouseModalSubmitInteraction.js  # 내전 모달 이벤트 처리
-│       ├── selectBoxUtils.js     # 셀렉트박스 이벤트 처리
-│       └── logChannelStorage.js  # 로그 채널 메모리 저장소
+│       └── selectBoxUtils.js     # 셀렉트박스 이벤트 처리
 ```
 
 ---
