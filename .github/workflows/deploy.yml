@@ -1,0 +1,77 @@
+name: Deploy Bot
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_VERSION: 22
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build deployment package
+        run: npm run build
+
+      - name: Create release archive
+        run: tar -czf release.tar.gz -C dist .
+
+      - name: Select deployment target
+        id: target
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "host=${{ secrets.PROD_HOST }}" >> "$GITHUB_OUTPUT"
+            echo "user=${{ secrets.PROD_USER }}" >> "$GITHUB_OUTPUT"
+            echo "key<<EOF" >> "$GITHUB_OUTPUT"
+            echo "${{ secrets.PROD_SSH_KEY }}" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+            echo "deploy_root=${{ secrets.PROD_DEPLOY_ROOT }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "host=${{ secrets.DEV_HOST }}" >> "$GITHUB_OUTPUT"
+            echo "user=${{ secrets.DEV_USER }}" >> "$GITHUB_OUTPUT"
+            echo "key<<EOF" >> "$GITHUB_OUTPUT"
+            echo "${{ secrets.DEV_SSH_KEY }}" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+            echo "deploy_root=${{ secrets.DEV_DEPLOY_ROOT }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ steps.target.outputs.key }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan "${{ steps.target.outputs.host }}" >> ~/.ssh/known_hosts
+
+      - name: Upload release archive
+        run: |
+          RELEASE_NAME="${GITHUB_REF_NAME}-$(date +%Y%m%d%H%M%S)"
+          echo "RELEASE_NAME=$RELEASE_NAME" >> "$GITHUB_ENV"
+          scp -i ~/.ssh/deploy_key \
+            release.tar.gz \
+            "${{ steps.target.outputs.user }}@${{ steps.target.outputs.host }}:/tmp/${RELEASE_NAME}.tar.gz"
+
+      - name: Deploy on server
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${{ steps.target.outputs.user }}@${{ steps.target.outputs.host }}" \
+            "bash -s" -- \
+            "${{ steps.target.outputs.deploy_root }}" \
+            "$RELEASE_NAME" \
+            "/tmp/${RELEASE_NAME}.tar.gz" \
+            < dist/scripts/deploy-release.sh

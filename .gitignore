@@ -3,3 +3,4 @@
 /deploy
 /app/data/logChannels.json
 /.env.*
+/dist
