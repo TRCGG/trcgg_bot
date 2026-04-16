@@ -15,7 +15,6 @@
     "csv-writer": "^1.6.0",
     "discord.js": "^14.18.0",
     "dotenv": "^16.4.7",
-    "exceljs": "^4.4.0",
-    "node-cron": "^3.0.3"
+    "exceljs": "^4.4.0"
   }
 }
