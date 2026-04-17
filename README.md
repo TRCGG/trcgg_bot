@@ -9,7 +9,7 @@
 
 - **Runtime**: Node.js
 - **Framework**: discord.js ^14.18.0
-- **Libraries**: dotenv, csv-writer, xlsx
+- **Libraries**: dotenv, node-cron, csv-writer, xlsx
 - **Backend**: 외부 REST API 연동 (`BASE_URL` 환경변수로 설정)
 
 ---
@@ -38,9 +38,11 @@ trcgg_bot/
 │   │   ├── managementClient.js   # 관리 API
 │   │   └── guildClient.js        # 길드 API
 │   ├── events/                   # Discord 이벤트 핸들러
-│   │   ├── ready.js              # 봇 시작 시 이벤트 처리
+│   │   ├── ready.js              # 봇 시작 시 스케줄 등록
 │   │   ├── onMessage.js          # 메시지 명령어 처리 + .rofl 파일 자동 등록
 │   │   └── interactionCreate.js  # 버튼 / 모달 / 셀렉트박스 인터랙션
+│   ├── schedule/
+│   │   └── schedule.js           # 크론 스케줄 (내전 시작 알림)
 │   └── utils/
 │       ├── networkUtils.js       # HTTP 클라이언트 (fetch 래퍼)
 │       ├── stringUtils.js        # 공통 유틸 (Embed 생성, 닉네임 파싱, 권한 체크 등)
@@ -124,6 +126,7 @@ DISCORD_TOKEN=          # Discord 봇 토큰
 BASE_URL=               # 백엔드 API 베이스 URL
 DISCORD_BOT_SECRET=     # API 인증 헤더값 (x-discord-bot)
 ADMIN_ID=               # 슈퍼 어드민 Discord 사용자 ID
+TRC_CHANNEL_ID=         # 스케줄 알림 메시지 발송 채널 ID
 NODE_ENV=               # development 설정 시 dev.gmok.kr 사용
 ```
 
