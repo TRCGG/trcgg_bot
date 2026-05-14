@@ -31,10 +31,20 @@ const get_champion_statistics = async (guildId, options = {}) => {
 /**
  * @description !클랜통계
  */
-const get_user_data = async (year, month, guildId) => {
-  const queryString = new URLSearchParams({ limit: 200, season: season });
-  if (year) queryString.append("year", year);
-  if (month) queryString.append("month", month);
+const get_user_data = async (seasonArg, month, guildId) => {
+  const queryString = new URLSearchParams({
+    limit: 1000,
+    season: seasonArg || season,
+  });
+
+  if (month) {
+    queryString.append("datePreset", "range");
+    queryString.append("fromMonth", month);
+    queryString.append("toMonth", month);
+  } else {
+    queryString.append("datePreset", "season");
+  }
+
   const url = `${prefix}/${guildId}/users`;
 
   return httpClient.get(`${url}?${queryString.toString()}`);

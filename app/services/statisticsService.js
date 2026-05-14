@@ -82,53 +82,56 @@ const get_master_of_champion_embed = async (msg, args) => {
 
 /**
  * @description !클랜통계
- * @returns
  */
-const send_excel_file = async (msg, year, month, guildId) => {
-  const userData = await statisticsClient.get_user_data(year, month, guildId);
-  if(userData.length === 0) {
-    msg.reply(`${year} ${month} 해당 데이터가 없습니다.`);
+const send_excel_file = async (msg, seasonArg, month, guildId) => {
+  const userData = await statisticsClient.get_user_data(seasonArg, month, guildId);
+  const targetSeason = seasonArg || season;
+  const periodLabel = getPeriodLabel(targetSeason, month);
+
+  if (!Array.isArray(userData) || userData.length === 0) {
+    msg.reply(`${periodLabel} 해당 데이터가 없습니다.`);
     return;
   }
 
   try {
-    // 1. 데이터 가공 (엑셀에 들어갈 형태로 변환)
-    const excelData = userData.map((user) => ({
-      '닉네임': `${user.riotName}#${user.riotNameTag}`,
-      '총 게임 수': user.totalCount,
-      '승': user.win,
-      '패': user.lose,
-      '승률 (%)': `${user.winRate}%`,
+    const sortedUserData = [...userData].sort(
+      (a, b) =>
+        b.totalCount - a.totalCount ||
+        parseFloat(b.winRate) - parseFloat(a.winRate)
+    );
+
+    const excelData = sortedUserData.map((user) => ({
+      "닉네임": `${user.riotName}#${user.riotNameTag}`,
+      "총 게임 수": user.totalCount,
+      "승": user.win,
+      "패": user.lose,
+      "승률 (%)": `${user.winRate}%`,
     }));
 
-    // 2. 워크북 및 워크시트 생성
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('UserStats');
+    const worksheet = workbook.addWorksheet("UserStats");
 
     worksheet.columns = [
-      { header: '닉네임',    key: '닉네임',    width: 25 },
-      { header: '총 게임 수', key: '총 게임 수', width: 10 },
-      { header: '승',        key: '승',        width: 5  },
-      { header: '패',        key: '패',        width: 5  },
-      { header: '승률 (%)',  key: '승률 (%)',  width: 10 },
+      { header: "닉네임", key: "닉네임", width: 25 },
+      { header: "총 게임 수", key: "총 게임 수", width: 10 },
+      { header: "승", key: "승", width: 5 },
+      { header: "패", key: "패", width: 5 },
+      { header: "승률 (%)", key: "승률 (%)", width: 10 },
     ];
 
     worksheet.addRows(excelData);
 
-    // 3. 엑셀 파일 버퍼 생성
     const excelBuffer = await workbook.xlsx.writeBuffer();
 
-    // 4. 파일명 생성 (년/월 유무에 따라 변경)
-    let fileName = '전적통계.xlsx';
-    if (year && month) {
-      fileName = `${year}년_${month}월_전적통계.xlsx`;
-    } else if (year) {
-      fileName = `${year}년_전적통계.xlsx`;
+    let fileName = `${targetSeason}시즌_전적통계.xlsx`;
+    if (month) {
+      fileName = `${targetSeason}시즌_${month}월_전적통계.xlsx`;
+    } else if (seasonArg) {
+      fileName = `${targetSeason}시즌_전적통계.xlsx`;
     }
 
-    // 5. 디스코드 메시지로 전송
     await msg.channel.send({
-      content: `📊 **${fileName.replace('.xlsx', '')}** 데이터를 엑셀 파일로 추출했습니다.`,
+      content: `**${periodLabel} 클랜통계** 데이터를 엑셀 파일로 추출했습니다.`,
       files: [{
         attachment: excelBuffer,
         name: fileName
@@ -136,7 +139,7 @@ const send_excel_file = async (msg, year, month, guildId) => {
     });
 
   } catch (error) {
-    console.error('엑셀 파일 생성 중 오류 발생:', error);
+    console.error("엑셀 파일 생성 중 오류 발생:", error);
     throw error;
   }
 };
@@ -207,6 +210,15 @@ const formatNumber = (value, fractionDigits = 0) => {
   if (Number.isNaN(number)) return "0";
 
   return number.toFixed(fractionDigits).replace(/\.0+$/, "");
+};
+
+/**
+ * @description 클랜통계 조회 기간 표시 문자열 생성
+ */
+const getPeriodLabel = (targetSeason, month) => {
+  if (!month) return `${targetSeason} 시즌 전체`;
+
+  return `${targetSeason} 시즌 ${month}월`;
 };
 
 module.exports = {
