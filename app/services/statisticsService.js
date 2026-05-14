@@ -2,33 +2,38 @@ const statisticsClient = require("../client/statisticsClient");
 const stringUtils = require("../utils/stringUtils");
 const ExcelJS = require('exceljs');
 
+const season = process.env.SEASON || "2025";
+
 /**
- * @param {*} msg
- * @param {*} args
  * @description !장인 Embed
- * @returns
  */
 const get_master_of_champion_embed = async (msg, args) => {
   const champ_name = args.join(" ").replace(/\s/g, "").trim();
   const guild_id = stringUtils.encodeGuildId(msg.guild.id);
-  const champ_data = await statisticsClient.get_master_of_champion_record(
-    champ_name,
-    guild_id
-  );
 
-  if(champ_data.length === 0) {
-    return `${champ_name} 검색 결과가 없습니다.`;
+  const [champRecordResult, championSummaryResult] = await Promise.allSettled([
+    statisticsClient.get_master_of_champion_record(champ_name, guild_id),
+    statisticsClient.get_champion_statistics(guild_id),
+  ]);
+  const champ_data = champRecordResult.status === "fulfilled" ? champRecordResult.value : [];
+  const champion_summary_data = championSummaryResult.status === "fulfilled" ? championSummaryResult.value : [];
+
+  if (champRecordResult.status === "rejected") {
+    throw champRecordResult.reason;
   }
 
-  // 1. 유동적 승률 컷라인 계산
+  if (champ_data.length === 0) {
+    return `${champ_name} 검색 결과가 없습니다. ${season} 시즌 전체 기준입니다.`;
+  }
+
+  const championSummary = findChampionStats(champion_summary_data, champ_name);
+
   const maxPlayCount = Math.max(...champ_data.map((d) => d.totalCount));
 
-  let minGamesLimit = 10; 
+  let minGamesLimit = 10;
   if (maxPlayCount < 10) minGamesLimit = 3;
-  else if (maxPlayCount < 20) minGamesLimit = 5; 
+  else if (maxPlayCount < 20) minGamesLimit = 5;
 
-  // 3. 랭킹 정렬
-  // 3-1. 많이한 순 (판수 내림차순 -> 승률 내림차순)
   const countRankData = [...champ_data]
     .sort(
       (a, b) =>
@@ -37,7 +42,6 @@ const get_master_of_champion_embed = async (msg, args) => {
     )
     .slice(0, 10);
 
-  // 3-2. 잘하는 순 (컷라인 이상 -> 승률 내림차순 -> 판수 내림차순)
   const winRateRankData = champ_data
     .filter((record) => record.totalCount >= minGamesLimit)
     .sort(
@@ -47,31 +51,29 @@ const get_master_of_champion_embed = async (msg, args) => {
     )
     .slice(0, 10);
 
-  const fieldOneValue = makeRankString(countRankData);
-  const fieldTwoValue = makeRankString(winRateRankData);
-
-  // 5. 썸네일 (옵션)
-  // 챔피언 영문명이 데이터에 없어서 생략하거나, 매핑 테이블이 필요함.
-  // 일단은 텍스트 위주로 구성
-
   const embedData = {
     title: `${champ_name} 장인 랭킹`,
-    description: `최소 컷라인: ${minGamesLimit}판`,
+    description: `${season} 시즌 전체 기준\n고승률 랭킹 최소 ${minGamesLimit}판 이상`,
     color: 0xffd700,
     fields: [
       {
-        name: `최다 플레이 (Top 10)`,
-        value: fieldOneValue,
+        name: "챔피언 요약",
+        value: makeChampionSummaryString(championSummary),
+        inline: false,
+      },
+      {
+        name: "최다 플레이 (Top 10)",
+        value: makeRankString(countRankData),
         inline: true,
       },
       {
-        name: `최고 승률 (Top 10)`,
-        value: fieldTwoValue,
+        name: "최고 승률 (Top 10)",
+        value: makeRankString(winRateRankData),
         inline: true,
       },
     ],
     footer: {
-      text: `총 ${champ_data.length}개의 포지션 데이터가 분석되었습니다.`,
+      text: `총 ${champ_data.length}명의 유저 데이터를 분석했습니다.`,
     },
   };
 
@@ -139,31 +141,75 @@ const send_excel_file = async (msg, year, month, guildId) => {
   }
 };
 
-/**
- * @desc 랭킹 문자열 생성 헬퍼 함수
- */
 const makeRankString = (dataList) => {
   if (dataList.length === 0) return "데이터 없음";
 
   return dataList
     .map((data, index) => {
-      let rankIcon = `${index + 1}.`;
-      if (index === 0) rankIcon = "🥇";
-      if (index === 1) rankIcon = "🥈";
-      if (index === 2) rankIcon = "🥉";
-
-      const winRate = Math.round(parseFloat(data.winRate));
+      const rank = `${index + 1}.`;
+      const winRate = formatNumber(data.winRate, 0);
       const posStr = data.position ? `[${data.position}]` : "";
+      const kda = data.kda !== undefined && data.kda !== null ? ` KDA ${formatNumber(data.kda, 2)}` : "";
 
-      return `${rankIcon} ${data.riotName} ${posStr} (${data.totalCount}판 ${winRate}% ${data.kda})`;
+      return `${rank} ${data.riotName} ${posStr} (${data.totalCount}판 / ${winRate}%${kda})`;
     })
     .join("\n");
+};
+
+/**
+ * @description 챔피언 전체 통계 요약 문자열 생성
+ */
+const makeChampionSummaryString = (summary) => {
+  if (!summary) {
+    return "챔피언 전체 통계 데이터 없음";
+  }
+
+  const winRate = formatNumber(summary.winRate, 0);
+  const kda = summary.kda !== undefined && summary.kda !== null ? ` / KDA ${formatNumber(summary.kda, 2)}` : "";
+
+  return `총 ${summary.totalCount}판 / 승률 ${winRate}%${kda}`;
+};
+
+/**
+ * @description 챔피언명으로 단일 챔피언 통계 조회
+ */
+const findChampionStats = (stats, champName) => {
+  return findChampionStatsList(stats, champName)[0] || null;
+};
+
+/**
+ * @description 챔피언명으로 일치하는 챔피언 통계 목록 조회
+ */
+const findChampionStatsList = (stats, champName) => {
+  if (!Array.isArray(stats)) return [];
+
+  const normalizedChampName = normalizeChampionName(champName);
+
+  return stats.filter((stat) => {
+    return [stat.champName, stat.champNameEng]
+      .filter(Boolean)
+      .some((name) => normalizeChampionName(name) === normalizedChampName);
+  });
+};
+
+/**
+ * @description 챔피언명 비교를 위한 정규화
+ */
+const normalizeChampionName = (name) => {
+  return String(name || "").replace(/\s/g, "").toLowerCase();
+};
+
+/**
+ * @description 숫자 표시용 포맷팅
+ */
+const formatNumber = (value, fractionDigits = 0) => {
+  const number = Number(value);
+  if (Number.isNaN(number)) return "0";
+
+  return number.toFixed(fractionDigits).replace(/\.0+$/, "");
 };
 
 module.exports = {
   get_master_of_champion_embed,
   send_excel_file
 }
-
-
-
