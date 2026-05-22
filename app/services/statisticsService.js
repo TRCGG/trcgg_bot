@@ -4,6 +4,8 @@ const ExcelJS = require('exceljs');
 
 const season = process.env.SEASON || "2025";
 
+const POSITION_LABEL = { TOP: "T", JUG: "J", MID: "M", ADC: "A", SUP: "S" };
+
 /**
  * @description !장인 Embed
  */
@@ -53,7 +55,7 @@ const get_master_of_champion_embed = async (msg, args) => {
 
   const embedData = {
     title: `${champ_name} 장인 랭킹`,
-    description: `${season} 시즌 전체 기준\n고승률 랭킹 최소 ${minGamesLimit}판 이상`,
+    description: `${season} 시즌 전체 기준`,
     color: 0xffd700,
     fields: [
       {
@@ -151,7 +153,7 @@ const makeRankString = (dataList) => {
     .map((data, index) => {
       const rank = `${index + 1}.`;
       const winRate = formatNumber(data.winRate, 0);
-      const posStr = data.position ? `[${data.position}]` : "";
+      const posStr = data.position ? `[${POSITION_LABEL[data.position] ?? data.position}]` : "";
       const kda = data.kda !== undefined && data.kda !== null ? ` KDA ${formatNumber(data.kda, 2)}` : "";
 
       return `${rank} ${data.riotName} ${posStr} (${data.totalCount}판 / ${winRate}%${kda})`;
