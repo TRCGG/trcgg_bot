@@ -35,6 +35,9 @@ fi
 
 mv "$TEMP_DIR" "$CURRENT_DIR"
 
+# 로그 디렉토리는 배포와 무관하게 유지
+mkdir -p "$DEPLOY_ROOT/logs"
+
 # PM2 reload, 실패 시 backup 으로 롤백
 if ! pm2 startOrReload "$ECOSYSTEM_FILE" --update-env; then
   echo "Deployment failed. Rolling back to backup..."
