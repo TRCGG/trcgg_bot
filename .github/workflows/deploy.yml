@@ -29,6 +29,12 @@ jobs:
       - name: Build deployment package
         run: npm run build
 
+      - name: Install production dependencies
+        run: npm ci --omit=dev
+
+      - name: Add node_modules to deployment package
+        run: cp -r node_modules dist/node_modules
+
       - name: Create release archive
         run: tar -czf release.tar.gz -C dist .
 
@@ -38,23 +44,19 @@ jobs:
           if [ "${GITHUB_REF_NAME}" = "main" ]; then
             echo "host=${{ secrets.PROD_HOST }}" >> "$GITHUB_OUTPUT"
             echo "user=${{ secrets.PROD_USER }}" >> "$GITHUB_OUTPUT"
-            echo "key<<EOF" >> "$GITHUB_OUTPUT"
-            echo "${{ secrets.PROD_SSH_KEY }}" >> "$GITHUB_OUTPUT"
-            echo "EOF" >> "$GITHUB_OUTPUT"
             echo "deploy_root=${{ secrets.PROD_DEPLOY_ROOT }}" >> "$GITHUB_OUTPUT"
           else
             echo "host=${{ secrets.DEV_HOST }}" >> "$GITHUB_OUTPUT"
             echo "user=${{ secrets.DEV_USER }}" >> "$GITHUB_OUTPUT"
-            echo "key<<EOF" >> "$GITHUB_OUTPUT"
-            echo "${{ secrets.DEV_SSH_KEY }}" >> "$GITHUB_OUTPUT"
-            echo "EOF" >> "$GITHUB_OUTPUT"
             echo "deploy_root=${{ secrets.DEV_DEPLOY_ROOT }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Setup SSH key
+      - name: Setup SSH
+        env:
+          SSH_KEY: ${{ github.ref_name == 'main' && secrets.PROD_SSH_KEY || secrets.DEV_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ steps.target.outputs.key }}" > ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan "${{ steps.target.outputs.host }}" >> ~/.ssh/known_hosts
 
