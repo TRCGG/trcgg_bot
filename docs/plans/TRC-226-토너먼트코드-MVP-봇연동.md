@@ -55,12 +55,22 @@
 
 ## 단계별 작업
 
-- [ ] 1. tournamentClient + `!내전시작`/`!다음코드` 명령 (수동 플로우 완성 — 이것만으로 MVP 시연 가능)
-- [ ] 2. localhost HTTP 서버 + `POST /post-next-code` (자동 게시)
-- [ ] 3. 백엔드 콜백 처리에 봇 호출 연결 (백엔드 TRC-225 4단계와 접합)
-- [ ] 4. E2E: 발급→게시→(시뮬 콜백)→다음 코드 자동 게시
+- [x] 1. tournamentClient + `!내전시작`/`!다음코드` 명령 (수동 플로우 완성 — 이것만으로 MVP 시연 가능)
+      — `app/client/tournamentClient.js`(post_codes/get_next_code, httpClient 재사용),
+      `app/commands/tournamentCommand.js`(`!내전시작 [판수]` 기본3·1~10 제한→발급→첫 코드 실행 채널 게시,
+      `!다음코드`→next-code 조회·게시, 404는 "코드 없음" 안내). bot.js 폴더 스캔으로 자동 등록.
+- [x] 2. localhost HTTP 서버 + `POST /post-next-code` (자동 게시)
+      — `app/server/botCallback.js`(node:http, 127.0.0.1 바인드, x-discord-bot 시크릿 불일치 404 위장,
+      기동 실패해도 봇 무중단). ready.js에서 client와 함께 기동.
+- [x] 3. 백엔드 콜백 처리에 봇 호출 연결 (백엔드 TRC-225 4단계와 접합)
+      — 백엔드 `src/services/botNotify.service.ts`(fire-and-forget, 절대 throw 금지) 신설,
+      `tournamentSave.facade.ts` ingest 신규 적재(loaded=true) 후 트랜잭션 밖에서 호출.
+- [ ] 4. E2E: 발급→게시→(시뮬 콜백)→다음 코드 자동 게시 (런타임 검증 — 백엔드 단계 8 실경기 게이트와 함께)
 
 구현 담당: **Opus**. 기획·리뷰: Fable.
+
+> ⚠️ **머지 금지 (2026-07-07 결정)**: MVP 단계 동안 이 브랜치를 `dev`에 머지하지 않는다.
+> 프로덕션 키 신청·검증이 끝나고 별도 승인이 있을 때까지 피처 브랜치에서만 유지.
 
 ## 영향받는 불변식 / 리스크
 
