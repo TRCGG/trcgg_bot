@@ -33,7 +33,8 @@ const delete_replay = async(msg, args) => {
 		throw new Error("Game Id를 입력해주세요. (ex: RPY-20260205-xxxxxx-001)");
 	}
 	const guild_id = stringUtils.encodeGuildId(msg.guild.id);
-	const result = await replayClient.delete_game(game_id, guild_id);
+	// 명령 사용자 id를 함께 보내 백엔드 삭제 감사 로그(guild_audit_log)에 남긴다
+	const result = await replayClient.delete_game(game_id, guild_id, msg.author.id);
 	return result;
 }
 
