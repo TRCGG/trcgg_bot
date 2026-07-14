@@ -12,11 +12,12 @@ const prefix = '/tournament';
  * @param {String} data.guildId  디스코드 길드 id
  * @param {String} data.channelId 코드를 게시할 채널 id (metadata에 저장됨)
  * @param {Number} data.count    선발급 개수
+ * @param {String} data.gameType 경기 유형 (1=일반내전/2=스크림/3=대회) — 적재 시 custom_match.game_type으로 전파
  * @returns {Promise<{codes: Array<{code:String, guildId:String, channelId:String, status:String, issuedDate:String}>}>}
  */
-const post_codes = async ({ guildId, channelId, count }) => {
+const post_codes = async ({ guildId, channelId, count, gameType }) => {
 	const url = `${prefix}/codes`;
-	return httpClient.post(url, { guildId, channelId, count });
+	return httpClient.post(url, { guildId, channelId, count, gameType });
 };
 
 /**
