@@ -1,20 +1,22 @@
 const { PermissionsBitField } = require('discord.js');
 
 /**
- * @param {Object/String} embedData 
+ * @param {Object/String} embedData
  * @description embed 형식의 jsondata, string 일경우 그대로 return
+ * embedData.components(선택)를 주면 임베드 아래에 버튼 등 컴포넌트를 붙인다.
+ * (미지정 시 기존과 동일하게 embeds만 반환 — 기존 호출부 무영향)
  */
 const createEmbed = (embedData) => {
   // 1. 단순 문자열인 경우 (에러 메시지 등)
   if (typeof embedData === "string") {
-    return embedData; 
+    return embedData;
   }
 
   const embed = {
     title: embedData.title || null,
     description: embedData.description || null,
     url: embedData.url || null,
-    color: embedData.color || null, 
+    color: embedData.color || null,
     fields: embedData.fields || [],
     footer: embedData.footer || null,
     thumbnail: embedData.thumbnail ? { url: embedData.thumbnail } : null,
@@ -22,8 +24,25 @@ const createEmbed = (embedData) => {
     timestamp: embedData.timestamp ? new Date().toISOString() : null,
   };
 
-  return { embeds: [embed] };
+  const payload = { embeds: [embed] };
+  if (embedData.components?.length) {
+    payload.components = embedData.components;
+  }
+  return payload;
 };
+
+/**
+ * @param {String} url 이동할 주소
+ * @param {String} label 버튼에 표시할 문구
+ * @description 링크 버튼 1개짜리 ActionRow 생성.
+ * ButtonStyle.Link(style 5)는 상호작용 핸들러 없이 클릭 시 바로 열린다.
+ */
+const createLinkButtonRow = (url, label) => [
+  {
+    type: 1, // ActionRow
+    components: [{ type: 2, style: 5, label, url }], // Button / Link
+  },
+];
 
 /**
  * @param {*} msg 
@@ -192,6 +211,7 @@ const encodeGuildId = (guild_id) => {
 
 module.exports = {
   createEmbed,
+  createLinkButtonRow,
   getMemberNick,
   checkAuth,
   splitDate,
