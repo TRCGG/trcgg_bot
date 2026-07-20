@@ -32,15 +32,14 @@ const createEmbed = (embedData) => {
 };
 
 /**
- * @param {String} url 이동할 주소
- * @param {String} label 버튼에 표시할 문구
- * @description 링크 버튼 1개짜리 ActionRow 생성.
+ * @param {Array<{url: String, label: String}>} buttons 링크 버튼 목록 (한 줄 최대 5개)
+ * @description 링크 버튼 ActionRow 생성.
  * ButtonStyle.Link(style 5)는 상호작용 핸들러 없이 클릭 시 바로 열린다.
  */
-const createLinkButtonRow = (url, label) => [
+const createLinkButtonRow = (buttons) => [
   {
     type: 1, // ActionRow
-    components: [{ type: 2, style: 5, label, url }], // Button / Link
+    components: buttons.map(({ url, label }) => ({ type: 2, style: 5, label, url })), // Button / Link
   },
 ];
 
