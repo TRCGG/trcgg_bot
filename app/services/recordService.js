@@ -170,7 +170,8 @@ const get_all_record_embed = async(msg, args) => {
 ? 'https://dev.gmok.kr' 
 : 'https://gmok.kr';
   const homepageUrl = encodeURI(`${frontendUrl}/summoners/${member.riotName}/${member.riotNameTag}`);
-  const championUrl = `${frontendUrl}/champion`;
+  // 소환사 페이지의 챔피언 탭 (탭 상태가 URL 쿼리로 관리됨)
+  const championUrl = `${homepageUrl}?tab=champion`;
 
   const embedData = {
     title: `${member.riotName}#${member.riotNameTag}`,
