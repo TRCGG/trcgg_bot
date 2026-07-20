@@ -4,10 +4,6 @@ const stringUtils = require('../utils/stringUtils');
  * 전적 api call service
  */
 
-// 임베드 좌측 컬러 바 — 웹 포인트 컬러(colors.js blueText #6BB8FF)와 동일하게 맞춰
-// 디스코드/웹이 같은 서비스로 보이도록 한다 (TRC-245)
-const BRAND_COLOR = 0x6bb8ff;
-
 /**
  * @param {*} msg
  * @param {*} args
@@ -180,7 +176,6 @@ const get_all_record_embed = async(msg, args) => {
     url: homepageUrl,
     description: description,
     fields: fields,
-    color: BRAND_COLOR,
     footer: {
       text: "gmok.kr에서 더 자세한 전적을 볼 수 있어요"
     },
