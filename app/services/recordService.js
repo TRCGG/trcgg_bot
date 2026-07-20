@@ -177,7 +177,7 @@ const get_all_record_embed = async(msg, args) => {
     description: description,
     fields: fields,
     footer: {
-      text: "gmok.kr에서 더 자세한 전적을 볼 수 있어요"
+      text: "gmok.kr에서 더 자세한 전적 확인"
     },
     // 제목 링크만으로는 웹 이동이 가능하다는 걸 인지하기 어려워 버튼을 함께 노출한다 (TRC-245)
     components: stringUtils.createLinkButtonRow(homepageUrl, "🌐 웹에서 전체 전적 보기"),
