@@ -20,10 +20,11 @@ const post_replay = async(data) => {
 
 /**
  * @description !drop 게임 기록 삭제
+ * @param {String} actorMemberId 명령 사용자 Discord id (삭제 감사 로그용)
  */
-const delete_game = async(gameId, guildId) => {
+const delete_game = async(gameId, guildId, actorMemberId) => {
 	const url = `/matches/${guildId}/games/${gameId}`;
-	return httpClient.delete(url);
+	return httpClient.delete(url, { actorMemberId });
 }
 
 module.exports = {

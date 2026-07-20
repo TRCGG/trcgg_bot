@@ -26,7 +26,7 @@ module.exports = {
         const guildName = msg.guild.name;
         const createUser = msg.member.nickname || msg.author.username;
         const fileNameWithoutExt = fileName.slice(0, -5);
-        const gameType = '1'; // 1: 내전 2: 대회
+        const gameType = '1'; // 1=일반내전/2=스크림/3=대회 — 리플 첨부는 항상 일반내전
 
         try {
           const result = await replayService.save(
