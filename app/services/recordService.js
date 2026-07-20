@@ -170,15 +170,19 @@ const get_all_record_embed = async(msg, args) => {
 ? 'https://dev.gmok.kr' 
 : 'https://gmok.kr';
   const homepageUrl = encodeURI(`${frontendUrl}/summoners/${member.riotName}/${member.riotNameTag}`);
+  // 소환사 페이지의 챔피언 탭 (탭 상태가 URL 쿼리로 관리됨)
+  const championUrl = `${homepageUrl}?tab=champion`;
 
   const embedData = {
     title: `${member.riotName}#${member.riotNameTag}`,
     url: homepageUrl,
     description: description,
     fields: fields,
-    footer: {
-      text: "Gmok Match Dashboard"
-    }
+    // 제목 링크만으로는 웹 이동이 가능하다는 걸 인지하기 어려워 버튼을 함께 노출한다 (TRC-245)
+    components: stringUtils.createLinkButtonRow([
+      { url: homepageUrl, label: "🌐 전체 전적 보기" },
+      { url: championUrl, label: "📊 챔피언 목록" },
+    ]),
   };
 
   return stringUtils.createEmbed(embedData);
