@@ -1,8 +1,9 @@
 const { BotError } = require('./errors');
+const { safeReply } = require('./discordUtils');
 
 module.exports = {
   // 성공 처리
-  success: (msg, text) => msg.reply(`✅ ${text}`),
+  success: (msg, text) => safeReply(msg, `✅ ${text}`),
 
   // 에러 처리
   // BotError 5xx: 시스템 에러 → 메시지 숨김
@@ -11,11 +12,11 @@ module.exports = {
   error: (msg, error) => {
     if (error instanceof BotError && error.status >= 500) {
       console.error(error);
-      return msg.reply(`⚠️ 오류가 발생했습니다.`);
+      return safeReply(msg, `⚠️ 오류가 발생했습니다.`);
     }
-    msg.reply(`⚠️ ${error.message || "알 수 없는 오류"}`);
+    return safeReply(msg, `⚠️ ${error.message || "알 수 없는 오류"}`);
   },
 
   // 권한 없음
-  noAuth: (msg) => msg.reply("⛔ 권한이 없습니다."),
+  noAuth: (msg) => safeReply(msg, "⛔ 권한이 없습니다."),
 };

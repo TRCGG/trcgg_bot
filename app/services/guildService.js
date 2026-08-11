@@ -2,6 +2,7 @@ const guildClient = require('../client/guildClient');
 const stringUtils = require('../utils/stringUtils');
 const { AttachmentBuilder } = require('discord.js');
 const { createObjectCsvStringifier } = require('csv-writer');
+const { safeReply, safeSend } = require('../utils/discordUtils');
 /**
  * 길드 관련 api call service
  */
@@ -68,17 +69,17 @@ const get_guilds_list = async (client) => {
 const leave_discord_guild = async (client, msg, args) => {
 	const guild_id = args[0];
 	if (!guild_id) {
-		msg.reply("길드 ID를 입력하세요.");
+		await safeReply(msg, "길드 ID를 입력하세요.");
 		return;
 	}
 	const guild = client.guilds.cache.get(guild_id);
   try {
 		await guild.leave();
-		msg.reply(`길드 ${guild.name}에서 떠났습니다.`);
-		
+		await safeReply(msg, `길드 ${guild.name}에서 떠났습니다.`);
+
 	} catch (error) {
 		console.error("Error leaving guild:", error);
-		msg.reply("길드를 떠나는 중 오류가 발생했습니다.");
+		await safeReply(msg, "길드를 떠나는 중 오류가 발생했습니다.");
 	}
 }
 
@@ -126,10 +127,15 @@ const show_guild_member_list = async (client, msg, args) => {
 
 	// AttachmentBuilder에 바로 넣기
 	const attachment = new AttachmentBuilder(buffer, { name: 'members.csv' });
-	await msg.channel.send({
+	const sent = await safeSend(msg.channel, {
 		content: `멤버 목록 (${records.length}명):`,
 		files: [attachment]
 	});
+
+	// 파일 전송은 AttachFiles까지 필요해 실패할 수 있다. 조용히 사라지지 않게 알린다.
+	if (!sent) {
+		await safeReply(msg, ':warning: 멤버 목록 파일을 보내지 못했습니다. 봇의 채널 권한(파일 첨부)을 확인해주세요.');
+	}
 
 }
 

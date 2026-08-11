@@ -1,6 +1,7 @@
 const { Events } = require("discord.js");
 const replayService = require("../services/replayService");
 const { BotError } = require("../utils/errors");
+const { safeReply } = require("../utils/discordUtils");
 
 /**
  * 디코 메시지 발생 이벤트
@@ -43,13 +44,13 @@ module.exports = {
             replayCode = result.replayCode;
           }
 
-          msg.reply(`:green_circle: 등록완료: ${replayCode}`);
+          await safeReply(msg, `:green_circle: 등록완료: ${replayCode}`);
         } catch (error) {
           if (error instanceof BotError && error.status === 400) {
-            msg.reply(`:warning: 이미 등록된 리플 파일: ${fileNameWithoutExt}`);
+            await safeReply(msg, `:warning: 이미 등록된 리플 파일: ${fileNameWithoutExt}`);
           } else {
             console.error('replays error:', error);
-            msg.reply(`:red_circle: 등록실패: ${fileNameWithoutExt}`);
+            await safeReply(msg, `:red_circle: 등록실패: ${fileNameWithoutExt}`);
           }
         }
       }
@@ -64,10 +65,11 @@ module.exports = {
 
     try {
       let cmd = client.commands.get(command);
-      if (cmd) cmd.run(client, msg, args); // 명령어 실행
+      // await 없이는 명령어 내부의 비동기 예외가 아래 catch를 그냥 통과한다.
+      if (cmd) await cmd.run(client, msg, args);
     } catch (error) {
       console.error(error);
-      msg.reply("명령어 실행 중 오류가 발생했습니다.");
+      await safeReply(msg, "명령어 실행 중 오류가 발생했습니다.");
     }
   },
 };
