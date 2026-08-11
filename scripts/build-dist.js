@@ -25,7 +25,11 @@ for (const target of copyTargets) {
   const destinationPath = path.join(distDir, target);
 
   fs.mkdirSync(path.dirname(destinationPath), { recursive: true });
-  fs.cpSync(sourcePath, destinationPath, { recursive: true });
+  // 테스트 파일이 dist에 들어가면 `node --test`가 dist까지 스캔해 같은 테스트를 두 번 돌린다.
+  fs.cpSync(sourcePath, destinationPath, {
+    recursive: true,
+    filter: (src) => !src.endsWith('.test.js'),
+  });
 }
 
 console.log(`Created deployment package at ${distDir}`);
