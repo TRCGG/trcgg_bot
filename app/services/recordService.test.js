@@ -50,7 +50,33 @@ test('멤버 미존재 검색은 에러 로그를 남기지 않고 안내 메시
 
   assert.match(caught.message, /검색 결과가 없습니다/);
   assert.equal(lines.error.length, 0, '에러 로그가 남았다');
-  assert.equal(requested.length, 2, '병렬 호출이 유지돼야 한다');
+  assert.equal(requested.length, 2);
+});
+
+// 개수만 세면 순차로 바꿔도 통과한다. 첫 응답을 두 번째 요청이 올 때까지 붙잡아
+// 실제로 동시에 나가는지 본다. 순차면 첫 응답이 영영 안 풀려 시간초과로 잡힌다.
+test('두 조회는 동시에 나간다', async () => {
+  let releaseFirst;
+  const secondArrived = new Promise((resolve) => { releaseFirst = resolve; });
+  let count = 0;
+
+  global.fetch = async () => {
+    count += 1;
+    if (count === 1) await secondArrived;
+    else releaseFirst();
+    return new Response(NOT_FOUND_BODY, { status: 404 });
+  };
+
+  const call = capture(async () => {
+    try { await recordService.get_all_record_embed(makeMsg(), ['없는닉']); } catch { /* 안내 메시지 */ }
+  });
+
+  const timedOut = Symbol('timeout');
+  const timer = new Promise((resolve) => setTimeout(() => resolve(timedOut), 1000));
+  const outcome = await Promise.race([call, timer]);
+
+  releaseFirst(); // 실패했더라도 매달린 요청을 풀어준다
+  assert.notEqual(outcome, timedOut, '순차 실행됐다 — 병렬성이 깨졌다');
 });
 
 // status만으로 판단하면 라우트 오타 같은 다른 404까지 삼킨다.
