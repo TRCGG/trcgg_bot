@@ -109,6 +109,37 @@ test('아무것도 선언하지 않으면 400·404도 에러 로그를 남긴다
   }
 });
 
+// 길드 id는 base64로 오는 경로와 원본으로 오는 경로가 섞여 있다.
+// 로그에서 갈리면 길드별 집계가 안 되므로 한 값으로 맞춰야 한다.
+test('길드 id를 원본 형태로 통일해 로그에 남긴다', async () => {
+  const RAW = '922118764437340230';
+  const ENCODED = Buffer.from(RAW, 'utf8').toString('base64');
+
+  for (const passed of [RAW, ENCODED]) {
+    stubFetch(JSON.stringify({ detail: '서버 오류' }), { status: 500 });
+
+    let caught;
+    const lines = await capture(async () => {
+      try { await httpClient.get('/matches/x/닉/dashboard', {}, { guildId: passed }); }
+      catch (e) { caught = e; }
+    });
+
+    assert.equal(lines.error[0][1].guild, RAW, `${passed} 가 원본으로 안 바뀌었다`);
+    assert.equal(caught.guildId, RAW);
+  }
+});
+
+test('guildId도 fetch 옵션으로 새어나가지 않는다', async () => {
+  let seenConfig;
+  global.fetch = async (_url, config) => {
+    seenConfig = config;
+    return new Response(JSON.stringify({ data: {} }), { status: 200 });
+  };
+
+  await httpClient.get('/matches/x/닉/dashboard', {}, { guildId: '922118764437340230' });
+  assert.equal(seenConfig.guildId, undefined);
+});
+
 test('expectedStatuses는 fetch 옵션으로 새어나가지 않는다', async () => {
   let seenConfig;
   global.fetch = async (_url, config) => {

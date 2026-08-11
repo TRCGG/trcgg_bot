@@ -49,7 +49,12 @@ module.exports = {
           if (error instanceof BotError && error.status === 400) {
             await safeReply(msg, `:warning: 이미 등록된 리플 파일: ${fileNameWithoutExt}`);
           } else {
-            console.error('replays error:', error);
+            console.error('replays error:', {
+              guild: guildId,
+              file: fileNameWithoutExt,
+              status: error?.status,
+              message: error?.message,
+            });
             await safeReply(msg, `:red_circle: 등록실패: ${fileNameWithoutExt}`);
           }
         }

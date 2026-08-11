@@ -107,6 +107,7 @@ const safeSend = async (channel, payload) => {
     if (!canSend(channel, payload)) {
       // 스케줄·콜백처럼 고정 채널로 보내는 경로는 조용히 실패하면 영원히 모른다.
       console.warn('[safeSend] 전송 불가', {
+        guild: channel?.guild?.id,
         channel: channel?.id,
         missing: missingPermissions(channel, payload),
       });
@@ -116,7 +117,9 @@ const safeSend = async (channel, payload) => {
     return true;
   } catch (error) {
     markIfGone(channel?.id, error);
-    console.warn('[safeSend] 전송 실패', { channel: channel?.id, code: error?.code });
+    console.warn('[safeSend] 전송 실패', {
+      guild: channel?.guild?.id, channel: channel?.id, code: error?.code,
+    });
     return false;
   }
 };
@@ -140,7 +143,9 @@ const safeReply = async (msg, payload) => {
           if (await safeSend(msg.channel, payload)) return true;
         } else if (!isPermissionDenied(error) && error?.code !== DiscordCode.UNKNOWN_CHANNEL) {
           // 권한·채널 문제가 아니면 폴백해도 같은 이유로 실패한다. 숨기지 않고 드러낸다.
-          console.warn('[safeReply] 답장 실패', { channel: msg.channel?.id, code: error?.code });
+          console.warn('[safeReply] 답장 실패', {
+            guild: msg.guild?.id, channel: msg.channel?.id, code: error?.code,
+          });
           return false;
         }
       }
@@ -155,7 +160,9 @@ const safeReply = async (msg, payload) => {
     return false;
   } catch (error) {
     // 호출부가 await를 빠뜨려도 미처리 rejection이 되지 않아야 한다.
-    console.warn('[safeReply] 예기치 못한 실패', { message: error?.message });
+    console.warn('[safeReply] 예기치 못한 실패', {
+      guild: msg?.guild?.id, message: error?.message,
+    });
     return false;
   }
 };

@@ -4,6 +4,19 @@ const BaseURL = process.env.BASE_URL;
 const BotHeader = process.env.DISCORD_BOT_SECRET;
 
 const isTimeout = (error) => error?.name === 'AbortError' || error?.name === 'TimeoutError';
+
+// 길드 id는 대부분 base64로 인코딩돼 넘어오지만 토너먼트 경로는 원본을 그대로 쓴다.
+// 로그에서 같은 길드가 두 값으로 갈리면 집계가 안 되므로 원본 형태로 맞춘다.
+const toRawGuildId = (value) => {
+  if (!value) return undefined;
+  const text = String(value);
+  try {
+    const decoded = Buffer.from(text, 'base64').toString('utf8');
+    return /^\d{17,20}$/.test(decoded) ? decoded : text;
+  } catch {
+    return text;
+  }
+};
 /**
  * fetch httpClient.js  
  */
@@ -11,7 +24,8 @@ const httpClient = {
 
   async request(method, url, options = {}) {
     // 어떤 상태코드가 정상 분기인지는 호출부만 안다. 전송 계층이 임의로 판단하지 않는다.
-    const { expectedStatuses = [], ...fetchOptions } = options;
+    const { expectedStatuses = [], guildId, ...fetchOptions } = options;
+    const guild = toRawGuildId(guildId);
 
     const config = {
       method,
@@ -66,13 +80,14 @@ const httpClient = {
       // 정상 분기를 error.log에서 빼려면 stdout(console.log)이어야 한다.
       // 지우지는 않는다 — 한 엔드포인트가 통째로 깨진 걸 놓치면 안 된다.
       if (expected) {
-        console.log(`[expected] ${response.status} ${method} ${cleanUrl} — ${message}`);
+        console.log(`[expected] ${response.status} ${method} ${cleanUrl} guild=${guild ?? '-'} — ${message}`);
       } else {
         console.error('Response Error:', {
           time: new Date().toISOString(),
           method,
           url: cleanUrl,
           status: response.status,
+          guild,
           data: parsed ?? raw.slice(0, 300)
         });
       }
@@ -81,6 +96,7 @@ const httpClient = {
         expected,
         method,
         url: cleanUrl,
+        guildId: guild,
         bodySnippet: parsed ? undefined : raw.slice(0, 300),
       });
     }

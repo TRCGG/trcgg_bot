@@ -11,7 +11,7 @@ const get_master_of_champion_record = async (champName, guildId) => {
   });
   const url = `${prefix}/${guildId}/users`;
 
-  return httpClient.get(`${url}?${queryString.toString()}`);
+  return httpClient.get(`${url}?${queryString.toString()}`, {}, { guildId });
 }
 
 const get_champion_statistics = async (guildId, options = {}) => {
@@ -25,7 +25,7 @@ const get_champion_statistics = async (guildId, options = {}) => {
 
   const url = `${prefix}/${guildId}/champions`;
 
-  return httpClient.get(`${url}?${queryString.toString()}`);
+  return httpClient.get(`${url}?${queryString.toString()}`, {}, { guildId });
 }
 
 /**
@@ -47,7 +47,7 @@ const get_user_data = async (seasonArg, month, guildId) => {
 
   const url = `${prefix}/${guildId}/users`;
 
-  return httpClient.get(`${url}?${queryString.toString()}`);
+  return httpClient.get(`${url}?${queryString.toString()}`, {}, { guildId });
 }
 
 module.exports = {

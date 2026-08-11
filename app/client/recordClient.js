@@ -16,7 +16,7 @@ const get_all_record = async(riotName, riotNameTag, guildId) => {
   if(riotNameTag){
     url = `${url}?riotNameTag=${riotNameTag}`;
   }
-  return httpClient.get(url, {}, MEMBER_MAY_BE_MISSING);
+  return httpClient.get(url, {}, { ...MEMBER_MAY_BE_MISSING, guildId });
 }
 
 /**
@@ -27,7 +27,7 @@ const get_recent_record = async(riotName, riotNameTag, guildId) => {
   if(riotNameTag){
     url = `${url}?riotNameTag=${riotNameTag}`;
   }
-  return httpClient.get(url, {}, MEMBER_MAY_BE_MISSING);
+  return httpClient.get(url, {}, { ...MEMBER_MAY_BE_MISSING, guildId });
 }
 
 /**
@@ -35,7 +35,7 @@ const get_recent_record = async(riotName, riotNameTag, guildId) => {
  */
 const get_result_record = async(gameId, guild_id) => {
   const url = `${prefix}/${guild_id}/games/${gameId}`;
-  return httpClient.get(url);
+  return httpClient.get(url, {}, { guildId: guild_id });
 }
 
 module.exports = {

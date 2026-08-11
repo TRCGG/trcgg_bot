@@ -10,7 +10,7 @@ const prefix = '/guildMember';
  */
 const get_sublist = async(guildId) => {
 	const url = `${prefix}/${guildId}/sub-accounts`;
-	return httpClient.get(url);
+	return httpClient.get(url, {}, { guildId });
 }
 
 /**
@@ -19,7 +19,7 @@ const get_sublist = async(guildId) => {
 const post_subaccount = async(data) => {
 	const url = `${prefix}/sub-account`;
 	// 미등록 계정·동일 계정 연결 시도는 사용자 입력 오류라 정상 분기로 안내된다.
-	return httpClient.post(url, data, { expectedStatuses: [400] });
+	return httpClient.post(url, data, { expectedStatuses: [400], guildId: data?.guildId });
 }
 
 /**
@@ -27,7 +27,7 @@ const post_subaccount = async(data) => {
  */
 const put_accountstatus = async(data) => {
 	const url = `${prefix}/status`;
-	return httpClient.put(url, data);
+	return httpClient.put(url, data, { guildId: data?.guildId });
 }
 
 /**
@@ -35,7 +35,7 @@ const put_accountstatus = async(data) => {
  */
 const delete_subaccount = async(data) => {
 	const url = `${prefix}/sub-account`;
-	return httpClient.delete(url, data);
+	return httpClient.delete(url, data, { guildId: data?.guildId });
 }
 
 module.exports = {
