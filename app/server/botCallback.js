@@ -1,4 +1,5 @@
 const http = require('node:http');
+const { safeSend } = require('../utils/discordUtils');
 
 /**
  * 백엔드 → 봇 콜백 수신용 경량 HTTP 서버 (TRC-226 단계 2)
@@ -78,7 +79,18 @@ const start = (client) => {
 
 				const remainingText =
 					remaining !== undefined && remaining !== null ? `\n:ticket: 남은 코드 ${remaining}개` : '';
-				await channel.send(`:arrow_forward: **다음 코드**\n\`\`\`${code}\`\`\`${remainingText}`);
+				const sent = await safeSend(
+					channel,
+					`:arrow_forward: **다음 코드**\n\`\`\`${code}\`\`\`${remainingText}`,
+					'callback:nextCode',
+				);
+
+				if (!sent) {
+					res
+						.writeHead(502, { 'Content-Type': 'application/json' })
+						.end(JSON.stringify({ status: 'error', reason: 'post_failed' }));
+					return;
+				}
 
 				res
 					.writeHead(200, { 'Content-Type': 'application/json' })

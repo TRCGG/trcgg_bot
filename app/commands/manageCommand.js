@@ -2,6 +2,7 @@ const manageService = require("../services/managementService");
 const replayService = require("../services/replayService");
 const stringUtils = require('../utils/stringUtils');
 const res = require('../utils/responseHandler');
+const { safeReply } = require('../utils/discordUtils');
 
 /**
  * 관리자 명령어 
@@ -12,7 +13,7 @@ module.exports = [
     run: async (client, msg, args) => {
       try {
         const result = await manageService.get_doc_embed();
-        await msg.reply(result);
+        await safeReply(msg, result, 'cmd:manage');
       } catch (error) {
         res.error(msg, error);
       }
@@ -23,7 +24,7 @@ module.exports = [
     run: async (client, msg, args) => {
       try {
         const result = await manageService.get_sublist_embed(msg, args);
-        await msg.reply(result);
+        await safeReply(msg, result, 'cmd:manage');
       } catch (error) {
         res.error(msg, error);
       }

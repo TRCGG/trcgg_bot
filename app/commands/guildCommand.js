@@ -2,6 +2,7 @@ const stringUtils = require("../utils/stringUtils");
 const guildService = require("../services/guildService");
 const ADMIN_ID = process.env.ADMIN_ID;
 const res = require('../utils/responseHandler');
+const { safeReply } = require('../utils/discordUtils');
 
 
 /**
@@ -15,7 +16,7 @@ module.exports = [
       if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
         const result = await guildService.get_guilds_list();
-        await msg.reply(result);
+        await safeReply(msg, result, 'cmd:guild');
       } catch (error) {
         res.error(msg, error);
       }
@@ -28,7 +29,7 @@ module.exports = [
       if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
         const result = await guildService.show_guild_list(client);
-        await msg.reply(result);
+        await safeReply(msg, result, 'cmd:guild');
       } catch (error) {
         res.error(msg, error);
       }
@@ -41,7 +42,7 @@ module.exports = [
       if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
         const result = await guildService.leave_discord_guild(client, msg, args);
-        await msg.reply(result);
+        await safeReply(msg, result, 'cmd:guild');
       } catch (error) {
         res.error(msg, error);
       }

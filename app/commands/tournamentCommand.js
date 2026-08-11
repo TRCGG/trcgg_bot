@@ -1,6 +1,7 @@
 const tournamentClient = require('../client/tournamentClient');
 const res = require('../utils/responseHandler');
 const { BotError } = require('../utils/errors');
+const { safeReply, safeSend } = require('../utils/discordUtils');
 
 /**
  * 토너먼트코드 명령어 (TRC-226)
@@ -49,10 +50,12 @@ const createIssueCommand = ({ name, gameType, label }) => ({
 			const firstCode = codes[0].code;
 			const remaining = codes.length - 1;
 
-			await msg.channel.send(
+			await safeSend(
+				msg.channel,
 				`:crossed_swords: **${label} 시작!** 아래 토너먼트 코드로 방을 만들어주세요.\n` +
 					`\`\`\`${firstCode}\`\`\`\n` +
 					`:ticket: 남은 코드 ${remaining}개 (\`!다음코드\`로 다음 코드를 받을 수 있어요)`,
+				'cmd:코드발급',
 			);
 		} catch (error) {
 			res.error(msg, error);
@@ -73,14 +76,14 @@ module.exports = [
 
 				// 방어: 정상 응답인데 코드가 비어있는 경우.
 				if (!code || !code.code) {
-					return msg.reply(':warning: 발급된 코드가 없습니다. `!내전생성`으로 새 코드를 발급하세요.');
+					return safeReply(msg, ':warning: 발급된 코드가 없습니다. `!내전생성`으로 새 코드를 발급하세요.', 'cmd:다음코드');
 				}
 
-				await msg.channel.send(`:arrow_forward: **다음 코드**\n\`\`\`${code.code}\`\`\``);
+				await safeSend(msg.channel, `:arrow_forward: **다음 코드**\n\`\`\`${code.code}\`\`\``, 'cmd:다음코드');
 			} catch (error) {
 				// 남은 코드가 없으면 백엔드가 404 → 안내 후 종료.
 				if (error instanceof BotError && error.status === 404) {
-					return msg.reply(':warning: 발급된 코드가 없습니다. `!내전생성`으로 새 코드를 발급하세요.');
+					return safeReply(msg, ':warning: 발급된 코드가 없습니다. `!내전생성`으로 새 코드를 발급하세요.', 'cmd:다음코드');
 				}
 				res.error(msg, error);
 			}

@@ -1,6 +1,7 @@
 const statisticsClient = require("../client/statisticsClient");
 const stringUtils = require("../utils/stringUtils");
 const ExcelJS = require('exceljs');
+const { safeReply, safeSend } = require('../utils/discordUtils');
 
 const season = process.env.SEASON || "2025";
 
@@ -91,7 +92,7 @@ const send_excel_file = async (msg, seasonArg, month, guildId) => {
   const periodLabel = getPeriodLabel(targetSeason, month);
 
   if (!Array.isArray(userData) || userData.length === 0) {
-    msg.reply(`${periodLabel} 해당 데이터가 없습니다.`);
+    await safeReply(msg, `${periodLabel} 해당 데이터가 없습니다.`, 'stats:excel:empty');
     return;
   }
 
@@ -132,13 +133,18 @@ const send_excel_file = async (msg, seasonArg, month, guildId) => {
       fileName = `${targetSeason}시즌_전적통계.xlsx`;
     }
 
-    await msg.channel.send({
+    const sent = await safeSend(msg.channel, {
       content: `**${periodLabel} 클랜통계** 데이터를 엑셀 파일로 추출했습니다.`,
       files: [{
         attachment: excelBuffer,
         name: fileName
       }]
-    });
+    }, 'stats:excel');
+
+    // 파일 전송은 AttachFiles까지 필요해 실패할 수 있다. 조용히 사라지지 않게 알린다.
+    if (!sent) {
+      await safeReply(msg, ':warning: 엑셀 파일을 보내지 못했습니다. 봇의 채널 권한(파일 첨부)을 확인해주세요.', 'stats:excel:fail');
+    }
 
   } catch (error) {
     console.error("엑셀 파일 생성 중 오류 발생:", error);

@@ -1,5 +1,6 @@
 const recordService = require("../services/recordService");
 const res = require('../utils/responseHandler');
+const { safeReply } = require('../utils/discordUtils');
 
 /**
  * 전적 검색 명령어
@@ -10,7 +11,7 @@ module.exports = [
     run: async (client, msg, args) => {
       try {
         const result = await recordService.get_all_record_embed(msg, args);
-        msg.reply(result);
+        await safeReply(msg, result, 'cmd:전적');
       } catch (error) {
         res.error(msg, error);
       }
@@ -21,11 +22,11 @@ module.exports = [
     run: async (client, msg, args) => {
       try {
         const result = await recordService.get_result_record_embed(msg, args);
-        msg.reply(result);
+        await safeReply(msg, result, 'cmd:결과');
       } catch (error) {
         if (error?.message === 'Game not found') {
           const text = args.join(" ");
-          msg.reply(`**${text}** 검색 결과가 없습니다.`);
+          await safeReply(msg, `**${text}** 검색 결과가 없습니다.`, 'cmd:결과:404');
         } else {
           res.error(msg, error);
         }
