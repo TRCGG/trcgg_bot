@@ -69,7 +69,7 @@ module.exports = {
       if (cmd) await cmd.run(client, msg, args);
     } catch (error) {
       console.error(error);
-      await safeReply(msg, "명령어 실행 중 오류가 발생했습니다.", `cmd:${command}`);
+      await safeReply(msg, "명령어 실행 중 오류가 발생했습니다.");
     }
   },
 };
