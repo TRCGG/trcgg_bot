@@ -40,6 +40,18 @@ test('expected 404는 메시지를 그대로 보존하고 에러 로그를 남�
   assert.equal(lines.log.length, 1);
 });
 
+test('정상 분기 로그에도 길드가 실린다', async () => {
+  stubFetch(JSON.stringify({ message: 'guild member not found' }), { status: 404 });
+
+  const lines = await capture(async () => {
+    await assert.rejects(() => httpClient.get('/x', {}, {
+      expectedStatuses: [404], guildId: '922118764437340230',
+    }));
+  });
+
+  assert.match(lines.log[0][0], /guild=922118764437340230/);
+});
+
 // detail이 message보다 우선이라는 순서 자체를 고정한다.
 // 두 키가 함께 오는 응답이 없으면 순서를 뒤집어도 아무 테스트가 안 깨진다.
 test('detail이 message보다 우선한다', async () => {
@@ -129,15 +141,58 @@ test('길드 id를 원본 형태로 통일해 로그에 남긴다', async () => 
   }
 });
 
-test('guildId도 fetch 옵션으로 새어나가지 않는다', async () => {
+test('guildId·expectedStatuses는 모든 verb에서 fetch 옵션으로 새지 않는다', async () => {
   let seenConfig;
   global.fetch = async (_url, config) => {
     seenConfig = config;
     return new Response(JSON.stringify({ data: {} }), { status: 200 });
   };
+  const opts = { guildId: '922118764437340230', expectedStatuses: [404] };
 
-  await httpClient.get('/matches/x/닉/dashboard', {}, { guildId: '922118764437340230' });
-  assert.equal(seenConfig.guildId, undefined);
+  await httpClient.get('/x', {}, opts);
+  assert.deepEqual(Object.keys(seenConfig).sort(), ['headers', 'method', 'signal']);
+
+  for (const verb of ['post', 'put', 'delete']) {
+    await httpClient[verb]('/x', { a: 1 }, opts);
+    assert.equal(seenConfig.guildId, undefined, `${verb}에서 guildId가 샜다`);
+    assert.equal(seenConfig.expectedStatuses, undefined, `${verb}에서 expectedStatuses가 샜다`);
+    assert.equal(seenConfig.body, '{"a":1}');
+  }
+});
+
+// 본문을 못 읽은 걸 204로 오해하면 호출부가 undefined를 정상값으로 받는다.
+test('성공 응답의 본문 읽기 실패는 삼키지 않는다', async () => {
+  const readError = new Error('socket hang up');
+  global.fetch = async () => ({ ok: true, status: 200, text: async () => { throw readError; } });
+
+  await assert.rejects(() => httpClient.get('/x'), (e) => e === readError);
+});
+
+test('실패 응답은 본문을 못 읽어도 상태코드를 살린다', async () => {
+  global.fetch = async () => ({
+    ok: false, status: 503, text: async () => { throw new Error('socket hang up'); },
+  });
+
+  let caught;
+  await capture(async () => {
+    try { await httpClient.get('/x'); } catch (e) { caught = e; }
+  });
+  assert.equal(caught.status, 503);
+});
+
+// 프록시가 200에 로그인 페이지를 주는 경우. 안 남기면 어디에도 기록이 없다.
+test('해석 불가한 성공 응답도 길드와 함께 에러 로그를 남긴다', async () => {
+  stubFetch('<html>login</html>', { status: 200 });
+
+  let caught;
+  const lines = await capture(async () => {
+    try { await httpClient.get('/x', {}, { guildId: '922118764437340230' }); }
+    catch (e) { caught = e; }
+  });
+
+  assert.equal(lines.error.length, 1);
+  assert.equal(lines.error[0][1].guild, '922118764437340230');
+  assert.equal(caught.guildId, '922118764437340230');
 });
 
 test('expectedStatuses는 fetch 옵션으로 새어나가지 않는다', async () => {

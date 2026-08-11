@@ -55,6 +55,9 @@ module.exports = {
               status: error?.status,
               message: error?.message,
             });
+            // BotError는 networkUtils가 url·status·본문까지 이미 남겼다.
+            // 그 외(fetch 실패·TypeError 등)는 여기가 유일한 기록이라 스택이 필요하다.
+            if (!(error instanceof BotError)) console.error(error);
             await safeReply(msg, `:red_circle: 등록실패: ${fileNameWithoutExt}`);
           }
         }

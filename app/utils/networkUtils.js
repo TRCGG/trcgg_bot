@@ -54,6 +54,7 @@ const httpClient = {
     // text로 먼저 읽는다. json()으로 바로 파싱하면 실패 시 본문이 그 자리에서 사라져
     // 프록시 502 HTML·빈 응답을 나중에 추적할 수 없다.
     let raw = '';
+    let readFailure = null;
     try {
       raw = await response.text();
     } catch (error) {
@@ -63,6 +64,9 @@ const httpClient = {
         console.error('요청 시간 초과 (Timeout)');
         throw new Error('요청 시간 초과');
       }
+      // 실패 응답이면 상태코드만으로도 쓸모가 있으니 계속 진행한다.
+      // 성공 응답이면 아래에서 던진다 — 못 읽은 본문을 빈 본문으로 넘기면 안 된다.
+      readFailure = error;
     }
 
     let parsed = null;
@@ -101,13 +105,26 @@ const httpClient = {
       });
     }
 
+    // 본문을 못 읽은 걸 204(본문 없음)로 오해하면 호출부가 undefined를 정상값으로 받는다.
+    if (readFailure) throw readFailure;
+
     // 204 등 본문 없는 성공 응답. 파싱 실패로 취급하면 안 된다.
     if (!raw) return undefined;
 
     if (!parsed) {
+      // 프록시가 200에 로그인 페이지를 주는 식이면 여기서 안 남기면 어디에도 안 남는다.
+      console.error('Response Parse Error:', {
+        time: new Date().toISOString(),
+        method,
+        url: cleanUrl,
+        status: response.status,
+        guild,
+        data: raw.slice(0, 300)
+      });
       throw new BotError('응답을 해석하지 못했습니다', response.status, {
         method,
         url: cleanUrl,
+        guildId: guild,
         bodySnippet: raw.slice(0, 300),
       });
     }
