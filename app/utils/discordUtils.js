@@ -121,22 +121,10 @@ const safeSend = async (channel, payload) => {
   }
 };
 
-const sendToAuthor = async (msg, payload) => {
-  try {
-    await msg.author.send(
-      typeof payload === 'string'
-        ? `${payload}\n(원본 채널에 봇 전송 권한이 없어 DM으로 보냅니다.)`
-        : payload,
-    );
-    return true;
-  } catch {
-    return false; // DM 차단(50007) — 더 할 수 있는 게 없다
-  }
-};
-
 /**
- * 답장 → (원본 삭제 시) 같은 채널 일반 전송 → DM 순으로 떨어진다.
- * @returns {Promise<boolean>} 어느 경로로든 전달됐는지. 예외를 던지지 않는다.
+ * 답장 → (원본이 지워졌으면) 같은 채널 일반 전송까지만 시도한다.
+ * 보낼 수 없는 채널이면 DM 등으로 우회하지 않고 기록만 남긴다.
+ * @returns {Promise<boolean>} 전달 여부. 예외를 던지지 않는다.
  */
 const safeReply = async (msg, payload) => {
   try {
@@ -158,17 +146,13 @@ const safeReply = async (msg, payload) => {
       }
     }
 
-    // 폴백은 사용자 피해만 막고 원인(채널 권한)은 그대로 남는다.
-    // 여기서 기록하지 않으면 어느 길드를 고쳐야 하는지 알 방법이 없어진다.
-    const missing = missingPermissions(msg.channel, payload);
-    const delivered = await sendToAuthor(msg, payload);
-    console.warn('[safeReply] 채널 전송 불가 → DM 폴백', {
+    // 조용히 넘어가면 어느 길드 권한이 깨졌는지 알 방법이 없어진다.
+    console.warn('[safeReply] 채널 전송 불가', {
       guild: msg.guild?.id,
       channel: msg.channel?.id,
-      missing,
-      delivered,
+      missing: missingPermissions(msg.channel, payload),
     });
-    return delivered;
+    return false;
   } catch (error) {
     // 호출부가 await를 빠뜨려도 미처리 rejection이 되지 않아야 한다.
     console.warn('[safeReply] 예기치 못한 실패', { message: error?.message });
