@@ -16,7 +16,7 @@ module.exports = [
       if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
         const result = await guildService.get_guilds_list();
-        await safeReply(msg, result, 'cmd:guild');
+        await safeReply(msg, result, 'cmd:길드목록');
       } catch (error) {
         res.error(msg, error);
       }
@@ -29,7 +29,7 @@ module.exports = [
       if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
         const result = await guildService.show_guild_list(client);
-        await safeReply(msg, result, 'cmd:guild');
+        await safeReply(msg, result, 'cmd:디스코드길드목록');
       } catch (error) {
         res.error(msg, error);
       }
@@ -42,7 +42,7 @@ module.exports = [
       if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
         const result = await guildService.leave_discord_guild(client, msg, args);
-        await safeReply(msg, result, 'cmd:guild');
+        await safeReply(msg, result, 'cmd:길드떠나기');
       } catch (error) {
         res.error(msg, error);
       }

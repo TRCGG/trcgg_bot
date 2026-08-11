@@ -13,7 +13,7 @@ module.exports = [
     run: async (client, msg, args) => {
       try {
         const result = await manageService.get_doc_embed();
-        await safeReply(msg, result, 'cmd:manage');
+        await safeReply(msg, result, 'cmd:doc');
       } catch (error) {
         res.error(msg, error);
       }
@@ -24,7 +24,7 @@ module.exports = [
     run: async (client, msg, args) => {
       try {
         const result = await manageService.get_sublist_embed(msg, args);
-        await safeReply(msg, result, 'cmd:manage');
+        await safeReply(msg, result, 'cmd:부캐목록');
       } catch (error) {
         res.error(msg, error);
       }

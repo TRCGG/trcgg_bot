@@ -76,14 +76,14 @@ module.exports = [
 
 				// 방어: 정상 응답인데 코드가 비어있는 경우.
 				if (!code || !code.code) {
-					return safeReply(msg, ':warning: 발급된 코드가 없습니다. `!내전생성`으로 새 코드를 발급하세요.', 'cmd:다음코드');
+					return safeReply(msg, ':warning: 발급된 코드가 없습니다. `!내전생성`으로 새 코드를 발급하세요.', 'cmd:다음코드:없음');
 				}
 
 				await safeSend(msg.channel, `:arrow_forward: **다음 코드**\n\`\`\`${code.code}\`\`\``, 'cmd:다음코드');
 			} catch (error) {
 				// 남은 코드가 없으면 백엔드가 404 → 안내 후 종료.
 				if (error instanceof BotError && error.status === 404) {
-					return safeReply(msg, ':warning: 발급된 코드가 없습니다. `!내전생성`으로 새 코드를 발급하세요.', 'cmd:다음코드');
+					return safeReply(msg, ':warning: 발급된 코드가 없습니다. `!내전생성`으로 새 코드를 발급하세요.', 'cmd:다음코드:없음');
 				}
 				res.error(msg, error);
 			}
