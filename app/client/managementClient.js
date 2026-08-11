@@ -18,7 +18,8 @@ const get_sublist = async(guildId) => {
  */
 const post_subaccount = async(data) => {
 	const url = `${prefix}/sub-account`;
-	return httpClient.post(url, data);
+	// 미등록 계정·동일 계정 연결 시도는 사용자 입력 오류라 정상 분기로 안내된다.
+	return httpClient.post(url, data, { expectedStatuses: [400] });
 }
 
 /**
