@@ -102,14 +102,13 @@ const markIfGone = (channelId, error) => {
 /**
  * @returns {Promise<boolean>} 전송 성공 여부. 예외를 던지지 않는다.
  */
-const safeSend = async (channel, payload, ctx = '') => {
+const safeSend = async (channel, payload) => {
   try {
     if (!canSend(channel, payload)) {
       // 스케줄·콜백처럼 고정 채널로 보내는 경로는 조용히 실패하면 영원히 모른다.
       console.warn('[safeSend] 전송 불가', {
         channel: channel?.id,
         missing: missingPermissions(channel, payload),
-        ctx,
       });
       return false;
     }
@@ -117,7 +116,7 @@ const safeSend = async (channel, payload, ctx = '') => {
     return true;
   } catch (error) {
     markIfGone(channel?.id, error);
-    console.warn('[safeSend] 전송 실패', { channel: channel?.id, code: error?.code, ctx });
+    console.warn('[safeSend] 전송 실패', { channel: channel?.id, code: error?.code });
     return false;
   }
 };
@@ -139,7 +138,7 @@ const sendToAuthor = async (msg, payload) => {
  * 답장 → (원본 삭제 시) 같은 채널 일반 전송 → DM 순으로 떨어진다.
  * @returns {Promise<boolean>} 어느 경로로든 전달됐는지. 예외를 던지지 않는다.
  */
-const safeReply = async (msg, payload, ctx = '') => {
+const safeReply = async (msg, payload) => {
   try {
     if (canSend(msg.channel, payload)) {
       try {
@@ -150,10 +149,10 @@ const safeReply = async (msg, payload, ctx = '') => {
 
         if (isStaleReference(error)) {
           // 원본이 지워졌을 뿐이니 같은 채널에 일반 전송으로 떨군다.
-          if (await safeSend(msg.channel, payload, ctx)) return true;
+          if (await safeSend(msg.channel, payload)) return true;
         } else if (!isPermissionDenied(error) && error?.code !== DiscordCode.UNKNOWN_CHANNEL) {
           // 권한·채널 문제가 아니면 폴백해도 같은 이유로 실패한다. 숨기지 않고 드러낸다.
-          console.warn('[safeReply] 답장 실패', { channel: msg.channel?.id, code: error?.code, ctx });
+          console.warn('[safeReply] 답장 실패', { channel: msg.channel?.id, code: error?.code });
           return false;
         }
       }
@@ -168,12 +167,11 @@ const safeReply = async (msg, payload, ctx = '') => {
       channel: msg.channel?.id,
       missing,
       delivered,
-      ctx,
     });
     return delivered;
   } catch (error) {
     // 호출부가 await를 빠뜨려도 미처리 rejection이 되지 않아야 한다.
-    console.warn('[safeReply] 예기치 못한 실패', { message: error?.message, ctx });
+    console.warn('[safeReply] 예기치 못한 실패', { message: error?.message });
     return false;
   }
 };

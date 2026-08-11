@@ -44,13 +44,13 @@ module.exports = {
             replayCode = result.replayCode;
           }
 
-          await safeReply(msg, `:green_circle: 등록완료: ${replayCode}`, 'replay:ok');
+          await safeReply(msg, `:green_circle: 등록완료: ${replayCode}`);
         } catch (error) {
           if (error instanceof BotError && error.status === 400) {
-            await safeReply(msg, `:warning: 이미 등록된 리플 파일: ${fileNameWithoutExt}`, 'replay:dup');
+            await safeReply(msg, `:warning: 이미 등록된 리플 파일: ${fileNameWithoutExt}`);
           } else {
             console.error('replays error:', error);
-            await safeReply(msg, `:red_circle: 등록실패: ${fileNameWithoutExt}`, 'replay:fail');
+            await safeReply(msg, `:red_circle: 등록실패: ${fileNameWithoutExt}`);
           }
         }
       }

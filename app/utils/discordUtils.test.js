@@ -85,7 +85,7 @@ test('전송 권한이 없으면 답장을 시도조차 않고 DM으로 폴백�
 // 폴백이 조용히 성공하면 깨진 채널 권한을 영원히 모른다.
 test('DM 폴백 시 빠진 권한을 로그로 남긴다', async () => {
   const { msg } = makeMsg(VIEW_ONLY);
-  const lines = await captureWarn(() => safeReply(msg, 'hi', 'cmd:전적'));
+  const lines = await captureWarn(() => safeReply(msg, 'hi'));
 
   assert.equal(lines.length, 1);
   const [label, detail] = lines[0];
@@ -93,7 +93,6 @@ test('DM 폴백 시 빠진 권한을 로그로 남긴다', async () => {
   assert.deepEqual(detail.missing, ['SendMessages']);
   assert.equal(detail.delivered, true);
   assert.equal(detail.guild, 'G1');
-  assert.equal(detail.ctx, 'cmd:전적');
 });
 
 test('missingPermissions가 첨부·스레드 요구 권한까지 짚어준다', () => {

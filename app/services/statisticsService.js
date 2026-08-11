@@ -92,7 +92,7 @@ const send_excel_file = async (msg, seasonArg, month, guildId) => {
   const periodLabel = getPeriodLabel(targetSeason, month);
 
   if (!Array.isArray(userData) || userData.length === 0) {
-    await safeReply(msg, `${periodLabel} 해당 데이터가 없습니다.`, 'stats:excel:empty');
+    await safeReply(msg, `${periodLabel} 해당 데이터가 없습니다.`);
     return;
   }
 
@@ -139,11 +139,11 @@ const send_excel_file = async (msg, seasonArg, month, guildId) => {
         attachment: excelBuffer,
         name: fileName
       }]
-    }, 'stats:excel');
+    });
 
     // 파일 전송은 AttachFiles까지 필요해 실패할 수 있다. 조용히 사라지지 않게 알린다.
     if (!sent) {
-      await safeReply(msg, ':warning: 엑셀 파일을 보내지 못했습니다. 봇의 채널 권한(파일 첨부)을 확인해주세요.', 'stats:excel:fail');
+      await safeReply(msg, ':warning: 엑셀 파일을 보내지 못했습니다. 봇의 채널 권한(파일 첨부)을 확인해주세요.');
     }
 
   } catch (error) {

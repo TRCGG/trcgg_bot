@@ -82,7 +82,6 @@ const start = (client) => {
 				const sent = await safeSend(
 					channel,
 					`:arrow_forward: **다음 코드**\n\`\`\`${code}\`\`\`${remainingText}`,
-					'callback:nextCode',
 				);
 
 				if (!sent) {

@@ -11,7 +11,7 @@ module.exports = [
     run: async (client, msg, args) => {
       try {
         const result = await recordService.get_all_record_embed(msg, args);
-        await safeReply(msg, result, 'cmd:전적');
+        await safeReply(msg, result);
       } catch (error) {
         res.error(msg, error);
       }
@@ -22,11 +22,11 @@ module.exports = [
     run: async (client, msg, args) => {
       try {
         const result = await recordService.get_result_record_embed(msg, args);
-        await safeReply(msg, result, 'cmd:결과');
+        await safeReply(msg, result);
       } catch (error) {
         if (error?.message === 'Game not found') {
           const text = args.join(" ");
-          await safeReply(msg, `**${text}** 검색 결과가 없습니다.`, 'cmd:결과:404');
+          await safeReply(msg, `**${text}** 검색 결과가 없습니다.`);
         } else {
           res.error(msg, error);
         }

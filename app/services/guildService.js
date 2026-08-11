@@ -69,17 +69,17 @@ const get_guilds_list = async (client) => {
 const leave_discord_guild = async (client, msg, args) => {
 	const guild_id = args[0];
 	if (!guild_id) {
-		await safeReply(msg, "길드 ID를 입력하세요.", 'guild:leave:usage');
+		await safeReply(msg, "길드 ID를 입력하세요.");
 		return;
 	}
 	const guild = client.guilds.cache.get(guild_id);
   try {
 		await guild.leave();
-		await safeReply(msg, `길드 ${guild.name}에서 떠났습니다.`, 'guild:leave:ok');
+		await safeReply(msg, `길드 ${guild.name}에서 떠났습니다.`);
 
 	} catch (error) {
 		console.error("Error leaving guild:", error);
-		await safeReply(msg, "길드를 떠나는 중 오류가 발생했습니다.", 'guild:leave:fail');
+		await safeReply(msg, "길드를 떠나는 중 오류가 발생했습니다.");
 	}
 }
 
@@ -130,11 +130,11 @@ const show_guild_member_list = async (client, msg, args) => {
 	const sent = await safeSend(msg.channel, {
 		content: `멤버 목록 (${records.length}명):`,
 		files: [attachment]
-	}, 'guild:memberList');
+	});
 
 	// 파일 전송은 AttachFiles까지 필요해 실패할 수 있다. 조용히 사라지지 않게 알린다.
 	if (!sent) {
-		await safeReply(msg, ':warning: 멤버 목록 파일을 보내지 못했습니다. 봇의 채널 권한(파일 첨부)을 확인해주세요.', 'guild:memberList:fail');
+		await safeReply(msg, ':warning: 멤버 목록 파일을 보내지 못했습니다. 봇의 채널 권한(파일 첨부)을 확인해주세요.');
 	}
 
 }

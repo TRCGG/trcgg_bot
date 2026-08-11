@@ -15,7 +15,7 @@ module.exports = [
           msg,
           args
         );
-        await safeReply(msg, result, 'cmd:장인');
+        await safeReply(msg, result);
       } catch (error) {
         res.error(msg, error);
       }
@@ -34,8 +34,7 @@ module.exports = [
           "사용법이 올바르지 않습니다.\n" +
             "- 기본 시즌 전체 조회: `!클랜통계`\n" +
             "- 특정 시즌 전체 조회: `!클랜통계 2025`\n" +
-            "- 특정 월 조회: `!클랜통계 2025 12`",
-          'cmd:클랜통계:usage'
+            "- 특정 월 조회: `!클랜통계 2025 12`"
         );
       }
 
@@ -44,8 +43,7 @@ module.exports = [
 
         if (isNaN(targetSeason)) {
           return safeReply(msg,
-            "날짜 형식이 올바르지 않습니다.\n(시즌은 숫자여야 합니다)",
-            'cmd:클랜통계:season'
+            "날짜 형식이 올바르지 않습니다.\n(시즌은 숫자여야 합니다)"
           );
         }
       }
@@ -55,8 +53,7 @@ module.exports = [
 
         if (isNaN(targetMonth) || targetMonth < 1 || targetMonth > 12) {
           return safeReply(msg,
-            "날짜 형식이 올바르지 않습니다.\n(월은 1~12 사이의 숫자여야 합니다)",
-            'cmd:클랜통계:month'
+            "날짜 형식이 올바르지 않습니다.\n(월은 1~12 사이의 숫자여야 합니다)"
           );
         }
       }

@@ -15,7 +15,7 @@ const sendMessage = async (client) => {
   // 월~일 오후 5시
   cron.schedule("0 17 * * 0-6", async () => {
     const channel = client.channels.cache.get(TRC_CHANNEL_ID);
-    await safeSend(channel, "```19:30 시작합니다. 시작 5분전에 대기해주세요.```", 'schedule:1930');
+    await safeSend(channel, "```19:30 시작합니다. 시작 5분전에 대기해주세요.```");
   });
 };
 
