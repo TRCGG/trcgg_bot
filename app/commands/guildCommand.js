@@ -41,8 +41,9 @@ module.exports = [
     run: async (client, msg, args) => {
       if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
-        const result = await guildService.leave_discord_guild(client, msg, args);
-        await safeReply(msg, result, 'cmd:길드떠나기');
+        // leave_discord_guild가 성공·실패 응답을 직접 보낸다. 여기서 또 답장하면
+        // 반환값이 undefined라 빈 응답을 시도하게 된다.
+        await guildService.leave_discord_guild(client, msg, args);
       } catch (error) {
         res.error(msg, error);
       }

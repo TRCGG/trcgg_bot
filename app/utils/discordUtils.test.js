@@ -1,7 +1,16 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { PermissionsBitField } = require('discord.js');
-const { canSend, safeReply, unreachable } = require('./discordUtils');
+const { canSend, safeReply, missingPermissions, unreachable } = require('./discordUtils');
+
+// console.warn을 가로채 로그 내용까지 검증한다.
+const captureWarn = async (fn) => {
+  const lines = [];
+  const original = console.warn;
+  console.warn = (...args) => lines.push(args);
+  try { await fn(); } finally { console.warn = original; }
+  return lines;
+};
 
 const { ViewChannel, SendMessages, SendMessagesInThreads, AttachFiles } = PermissionsBitField.Flags;
 
@@ -73,6 +82,31 @@ test('전송 권한이 없으면 답장을 시도조차 않고 DM으로 폴백�
   assert.equal(calls.dm, 1);
 });
 
+// 폴백이 조용히 성공하면 깨진 채널 권한을 영원히 모른다.
+test('DM 폴백 시 빠진 권한을 로그로 남긴다', async () => {
+  const { msg } = makeMsg(VIEW_ONLY);
+  const lines = await captureWarn(() => safeReply(msg, 'hi', 'cmd:전적'));
+
+  assert.equal(lines.length, 1);
+  const [label, detail] = lines[0];
+  assert.match(label, /DM 폴백/);
+  assert.deepEqual(detail.missing, ['SendMessages']);
+  assert.equal(detail.delivered, true);
+  assert.equal(detail.guild, 'G1');
+  assert.equal(detail.ctx, 'cmd:전적');
+});
+
+test('missingPermissions가 첨부·스레드 요구 권한까지 짚어준다', () => {
+  const plain = makeMsg(VIEW_ONLY).msg.channel;
+  assert.deepEqual(missingPermissions(plain, 'hi'), ['SendMessages']);
+  assert.deepEqual(missingPermissions(plain, { files: [{}] }), ['SendMessages', 'AttachFiles']);
+
+  const thread = makeMsg(VIEW_ONLY, { isThread: true }).msg.channel;
+  assert.deepEqual(missingPermissions(thread, 'hi'), ['SendMessagesInThreads']);
+
+  assert.deepEqual(missingPermissions(null, 'hi'), ['NO_CHANNEL']);
+});
+
 test('50013이면 DM으로 폴백한다', async () => {
   const { msg, calls } = makeMsg(FULL, { replyErr: apiError(50013) });
   assert.equal(await safeReply(msg, 'hi'), true);
@@ -124,14 +158,9 @@ test('모든 경로가 실패해도 예외를 던지지 않는다', async () => 
 
 // Partials.Channel 사용 시 msg.channel이 null일 수 있다.
 test('채널이 null이어도 던지지 않고 DM으로 간다', async () => {
-  process.env.FALLBACK_CHANNEL_ID = 'FB1';
-  try {
-    const { msg, calls } = makeMsg(FULL, { noChannel: true });
-    assert.equal(await safeReply(msg, 'hi'), true);
-    assert.equal(calls.dm, 1);
-  } finally {
-    delete process.env.FALLBACK_CHANNEL_ID;
-  }
+  const { msg, calls } = makeMsg(FULL, { noChannel: true });
+  assert.equal(await safeReply(msg, 'hi'), true);
+  assert.equal(calls.dm, 1);
 });
 
 test('직렬화 불가한 rawError에도 던지지 않는다', async () => {

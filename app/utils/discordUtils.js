@@ -24,6 +24,10 @@ const DiscordCode = {
 // canSend가 다시 통과시켜 스스로 복구돼야 한다.
 const unreachable = new Set();
 
+const FLAG_NAMES = new Map(
+  Object.entries(PermissionsBitField.Flags).map(([name, bit]) => [bit, name]),
+);
+
 const requiredFlags = (channel, payload) => {
   const flags = [PermissionsBitField.Flags.ViewChannel];
 
@@ -56,6 +60,23 @@ const canSend = (channel, payload) => {
   return Boolean(perms && perms.has(requiredFlags(channel, payload)));
 };
 
+/**
+ * 어떤 권한이 없어서 막혔는지 계산한다. 손으로 적지 않으므로 실제와 어긋날 수 없고,
+ * 운영자가 무엇을 부여하면 되는지 그대로 알려준다.
+ */
+const missingPermissions = (channel, payload) => {
+  if (!channel) return ['NO_CHANNEL'];
+  if (unreachable.has(channel.id)) return ['CHANNEL_DELETED'];
+  if (!channel.guild) return [];
+  const me = channel.guild.members.me;
+  if (!me) return ['BOT_NOT_IN_GUILD'];
+  const perms = channel.permissionsFor(me);
+  if (!perms) return ['PERMISSIONS_UNAVAILABLE'];
+  return requiredFlags(channel, payload)
+    .filter((flag) => !perms.has(flag))
+    .map((flag) => FLAG_NAMES.get(flag) ?? String(flag));
+};
+
 const isPermissionDenied = (error) =>
   error?.code === DiscordCode.MISSING_PERMISSIONS ||
   error?.code === DiscordCode.MISSING_ACCESS;
@@ -83,7 +104,15 @@ const markIfGone = (channelId, error) => {
  */
 const safeSend = async (channel, payload, ctx = '') => {
   try {
-    if (!canSend(channel, payload)) return false;
+    if (!canSend(channel, payload)) {
+      // 스케줄·콜백처럼 고정 채널로 보내는 경로는 조용히 실패하면 영원히 모른다.
+      console.warn('[safeSend] 전송 불가', {
+        channel: channel?.id,
+        missing: missingPermissions(channel, payload),
+        ctx,
+      });
+      return false;
+    }
     await channel.send(payload);
     return true;
   } catch (error) {
@@ -91,18 +120,6 @@ const safeSend = async (channel, payload, ctx = '') => {
     console.warn('[safeSend] 전송 실패', { channel: channel?.id, code: error?.code, ctx });
     return false;
   }
-};
-
-const sendToFallbackChannel = async (msg, payload, ctx) => {
-  const fallbackId = process.env.FALLBACK_CHANNEL_ID;
-  if (!fallbackId || fallbackId === msg.channel?.id) return false;
-
-  const fallback = msg.client?.channels?.cache?.get(fallbackId);
-  const origin = msg.channel?.id ? `<#${msg.channel.id}>` : '알 수 없는 채널';
-  const routed = typeof payload === 'string'
-    ? `${payload}\n(${origin} 전송 권한 없음 · 요청자 ${msg.author})`
-    : payload;
-  return safeSend(fallback, routed, ctx);
 };
 
 const sendToAuthor = async (msg, payload) => {
@@ -119,7 +136,7 @@ const sendToAuthor = async (msg, payload) => {
 };
 
 /**
- * 답장 → (원본 삭제 시) 일반 전송 → 대체 채널 → DM 순으로 떨어진다.
+ * 답장 → (원본 삭제 시) 같은 채널 일반 전송 → DM 순으로 떨어진다.
  * @returns {Promise<boolean>} 어느 경로로든 전달됐는지. 예외를 던지지 않는다.
  */
 const safeReply = async (msg, payload, ctx = '') => {
@@ -142,11 +159,18 @@ const safeReply = async (msg, payload, ctx = '') => {
       }
     }
 
-    if (await sendToFallbackChannel(msg, payload, ctx)) return true;
-    if (await sendToAuthor(msg, payload)) return true;
-
-    console.warn('[safeReply] 전달 실패', { guild: msg.guild?.id, channel: msg.channel?.id, ctx });
-    return false;
+    // 폴백은 사용자 피해만 막고 원인(채널 권한)은 그대로 남는다.
+    // 여기서 기록하지 않으면 어느 길드를 고쳐야 하는지 알 방법이 없어진다.
+    const missing = missingPermissions(msg.channel, payload);
+    const delivered = await sendToAuthor(msg, payload);
+    console.warn('[safeReply] 채널 전송 불가 → DM 폴백', {
+      guild: msg.guild?.id,
+      channel: msg.channel?.id,
+      missing,
+      delivered,
+      ctx,
+    });
+    return delivered;
   } catch (error) {
     // 호출부가 await를 빠뜨려도 미처리 rejection이 되지 않아야 한다.
     console.warn('[safeReply] 예기치 못한 실패', { message: error?.message, ctx });
@@ -154,4 +178,4 @@ const safeReply = async (msg, payload, ctx = '') => {
   }
 };
 
-module.exports = { canSend, safeSend, safeReply, unreachable, DiscordCode };
+module.exports = { canSend, safeSend, safeReply, missingPermissions, unreachable, DiscordCode };

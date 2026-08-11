@@ -128,7 +128,6 @@ DISCORD_BOT_SECRET=     # API 인증 헤더값 (x-discord-bot)
 ADMIN_ID=               # 슈퍼 어드민 Discord 사용자 ID
 TRC_CHANNEL_ID=         # 스케줄 알림 메시지 발송 채널 ID
 NODE_ENV=               # development 설정 시 dev.gmok.kr 사용
-FALLBACK_CHANNEL_ID=    # (선택) 원래 채널에 전송 권한이 없을 때 대신 보낼 채널 ID
 BOT_CALLBACK_PORT=      # (선택) 백엔드 콜백 수신 포트 (기본 19902)
 ```
 
