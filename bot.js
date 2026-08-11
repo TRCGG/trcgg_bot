@@ -2,7 +2,7 @@
  * Discord Bot Setting
  */
 require('dotenv').config();
-const { Client, Collection, GatewayIntentBits, Partials} = require('discord.js');
+const { Client, Collection, GatewayIntentBits, Partials, Events } = require('discord.js');
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const fs = require('node:fs');
 const path = require('node:path');
@@ -46,7 +46,7 @@ for (const file of eventFiles) {
 			try {
 				await event.execute(client, ...args);
 			} catch (error) {
-				console.error(`[${new Date().toISOString()}] Error:`, error.message);
+				console.error(`[${new Date().toISOString()}] Error:`, error);
 			}
 		})
 	} else {
@@ -54,12 +54,27 @@ for (const file of eventFiles) {
 			try {
 				await event.execute(client, ...args);
 			} catch (error) {
-				console.error(`[${new Date().toISOString()}] Error:`, error.message);
+				console.error(`[${new Date().toISOString()}] Error:`, error);
 			}
 		})
 	}
 }
   
+// Node 15+ 는 미처리 rejection 발생 시 프로세스를 종료시킨다.
+// await 없이 호출된 전송(msg.reply 등)의 실패가 봇 전체를 죽이지 않도록 받아둔다.
+process.on('unhandledRejection', (reason) => {
+	console.error(`[${new Date().toISOString()}] UnhandledRejection:`, reason);
+});
+// uncaughtException은 상태가 이미 깨졌을 수 있다. 살려두면 pm2가 재시작할 기회를 잃고
+// 망가진 채로 계속 도므로, 기록만 남기고 종료해 재시작에 맡긴다.
+process.on('uncaughtException', (error) => {
+	console.error(`[${new Date().toISOString()}] UncaughtException:`, error);
+	process.exit(1);
+});
+client.on(Events.Error, (error) => {
+	console.error(`[${new Date().toISOString()}] ClientError:`, error);
+});
+
 client.login(DISCORD_TOKEN);
 
 
