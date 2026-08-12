@@ -1,7 +1,35 @@
 const { Events } = require("discord.js");
 const replayService = require("../services/replayService");
-const { BotError } = require("../utils/errors");
+const { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES } = require("../utils/errors");
 const { safeReply } = require("../utils/discordUtils");
+
+// 원인이 다르면 사용자가 할 일도 다르다. 재시도하면 되는지, 파일을 줄여야 하는지,
+// 관리자를 불러야 하는지가 갈린다. 백엔드 응답 계약은 TRC-261.
+const describeReplayFailure = (error, fileName) => {
+  // status가 있어도 BotError가 아니면 우리 계약을 따르는 값이 아니다.
+  if (!(error instanceof BotError)) return `:red_circle: 등록실패: ${fileName}`;
+
+  // 원인은 type으로만 판단한다. 프록시(nginx)도 502·504를 내므로 status만 보면
+  // 배포 중 pm2 reload가 만든 502를 Discord 탓으로 돌린다.
+  if (DISCORD_UPSTREAM_TYPES.has(error.type)) {
+    return `:hourglass: Discord에서 파일을 받아오지 못했습니다. 잠시 후 다시 올려주세요: ${fileName}`;
+  }
+  if (error.type === BotErrorType.TIMEOUT) {
+    return `:hourglass: 처리 시간이 초과됐습니다. 잠시 후 다시 올려주세요: ${fileName}`;
+  }
+  if (error.type === BotErrorType.UNREACHABLE) {
+    return `:red_circle: 서버에 연결할 수 없습니다. 관리자에게 알려주세요: ${fileName}`;
+  }
+
+  switch (error.status) {
+    case 400:
+      return `:warning: 이미 등록된 리플 파일: ${fileName}`;
+    case 413:
+      return `:warning: 파일이 너무 큽니다: ${fileName}`;
+    default:
+      return `:red_circle: 등록실패: ${fileName}`;
+  }
+};
 
 /**
  * 디코 메시지 발생 이벤트
@@ -46,20 +74,20 @@ module.exports = {
 
           await safeReply(msg, `:green_circle: 등록완료: ${replayCode}`);
         } catch (error) {
-          if (error instanceof BotError && error.status === 400) {
-            await safeReply(msg, `:warning: 이미 등록된 리플 파일: ${fileNameWithoutExt}`);
-          } else {
+          const isDuplicate = error instanceof BotError && error.status === 400;
+          if (!isDuplicate) {
             console.error('replays error:', {
               guild: guildId,
               file: fileNameWithoutExt,
               status: error?.status,
+              type: error?.type,
               message: error?.message,
             });
             // BotError는 networkUtils가 url·status·본문까지 이미 남겼다.
             // 그 외(fetch 실패·TypeError 등)는 여기가 유일한 기록이라 스택이 필요하다.
             if (!(error instanceof BotError)) console.error(error);
-            await safeReply(msg, `:red_circle: 등록실패: ${fileNameWithoutExt}`);
           }
+          await safeReply(msg, describeReplayFailure(error, fileNameWithoutExt));
         }
       }
       return;

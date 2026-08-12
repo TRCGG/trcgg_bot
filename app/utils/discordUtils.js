@@ -77,6 +77,11 @@ const missingPermissions = (channel, payload) => {
     .map((flag) => FLAG_NAMES.get(flag) ?? String(flag));
 };
 
+// discord.js REST는 자체 타임아웃(기본 15초)에서 abort로 끊는다. Discord 쪽 지연은
+// 권한 문제와 조치가 달라, 같은 '답장 실패'로 뭉개면 원인을 못 좁힌다.
+const isDiscordTimeout = (error) =>
+  error?.name === 'AbortError' || error?.name === 'TimeoutError';
+
 const isPermissionDenied = (error) =>
   error?.code === DiscordCode.MISSING_PERMISSIONS ||
   error?.code === DiscordCode.MISSING_ACCESS;
@@ -117,6 +122,16 @@ const safeSend = async (channel, payload) => {
     return true;
   } catch (error) {
     markIfGone(channel?.id, error);
+    if (isDiscordTimeout(error)) {
+      console.error('Request Timeout:', {
+        time: new Date().toISOString(),
+        target: 'discord',
+        action: 'send',
+        guild: channel?.guild?.id,
+        channel: channel?.id,
+      });
+      return false;
+    }
     console.warn('[safeSend] 전송 실패', {
       guild: channel?.guild?.id, channel: channel?.id, code: error?.code,
     });
@@ -137,6 +152,17 @@ const safeReply = async (msg, payload) => {
         return true;
       } catch (error) {
         markIfGone(msg.channel?.id, error);
+
+        if (isDiscordTimeout(error)) {
+          console.error('Request Timeout:', {
+            time: new Date().toISOString(),
+            target: 'discord',
+            action: 'reply',
+            guild: msg.guild?.id,
+            channel: msg.channel?.id,
+          });
+          return false;
+        }
 
         if (isStaleReference(error)) {
           // 원본이 지워졌을 뿐이니 같은 채널에 일반 전송으로 떨군다.

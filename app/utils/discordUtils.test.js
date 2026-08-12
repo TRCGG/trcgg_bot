@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { PermissionsBitField } = require('discord.js');
-const { canSend, safeReply, missingPermissions, unreachable } = require('./discordUtils');
+const { canSend, safeSend, safeReply, missingPermissions, unreachable } = require('./discordUtils');
 
 // console.warn을 가로채 로그 내용까지 검증한다.
 const captureWarn = async (fn) => {
@@ -175,4 +175,41 @@ test('10003이면 채널을 전송 대상에서 영구 제외한다', async () =
   } finally {
     unreachable.clear();
   }
+});
+
+// Discord 쪽 지연은 권한 문제와 조치가 다르다. 같은 '답장 실패'로 뭉개면 원인을 못 좁힌다.
+test('Discord 타임아웃은 target=discord로 구분해 남긴다', async () => {
+  const abort = Object.assign(new Error('aborted'), { name: 'AbortError' });
+  const { msg, calls } = makeMsg(FULL, { replyErr: abort });
+
+  const errors = [];
+  const orig = console.error;
+  console.error = (...a) => errors.push(a);
+  let result;
+  try { result = await safeReply(msg, 'hi'); } finally { console.error = orig; }
+
+  assert.equal(result, false);
+  assert.equal(calls.dm, 0);          // 우회하지 않는다
+  assert.equal(errors.length, 1);
+  const detail = errors[0][1];
+  assert.equal(detail.target, 'discord');
+  assert.equal(detail.action, 'reply');
+  assert.equal(detail.guild, 'G1');
+  assert.equal(detail.channel, 'C1');
+});
+
+test('safeSend의 Discord 타임아웃도 action=send로 구분된다', async () => {
+  const abort = Object.assign(new Error('aborted'), { name: 'TimeoutError' });
+  const { msg } = makeMsg(FULL, { sendErr: abort });
+
+  const errors = [];
+  const orig = console.error;
+  console.error = (...a) => errors.push(a);
+  let result;
+  try { result = await safeSend(msg.channel, 'hi'); } finally { console.error = orig; }
+
+  // true를 주면 safeReply의 답장 실패 폴백이 전달 성공으로 오인한다.
+  assert.equal(result, false);
+  assert.equal(errors[0][1].target, 'discord');
+  assert.equal(errors[0][1].action, 'send');
 });

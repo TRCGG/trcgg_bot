@@ -76,7 +76,9 @@ test('응답 단계 타임아웃은 API·길드와 함께 기록된다', async (
   });
 
   assert.equal(caught.message, '요청 시간 초과');
-  assert.equal(caught instanceof (require('./errors').BotError), false); // 5xx 숨김 분기를 타면 안 된다
+  // status 0이라 responseHandler의 5xx 숨김 분기를 타지 않는다 — 이 문구가 사용자에게 간다.
+  assert.equal(caught.status, 0);
+  assert.equal(caught.type, 'request-timeout');
 
   const [label, detail] = lines.error[0];
   assert.match(label, /Timeout/);
@@ -291,4 +293,85 @@ test('본문이 있는데 JSON이 아닌 성공 응답은 드러낸다', async (
 
   assert.equal(caught.message, '응답을 해석하지 못했습니다');
   assert.match(caught.bodySnippet, /login page/);
+});
+
+// TRC-261 계약: 원인은 ProblemDetails.type으로 온다.
+// errorHandler에서 detail만 showMessage 게이트를 타고 type은 항상 나오므로,
+// 5xx로 메시지가 숨겨져도 type으로 원인을 알 수 있다.
+test('백엔드 ProblemDetails.type을 BotError로 받는다', async () => {
+  stubFetch(JSON.stringify({
+    type: 'discord-download-timeout',
+    title: 'Gateway Timeout',
+    status: 504,
+    detail: '오류가 발생했습니다.',
+  }), { status: 504 });
+
+  let caught;
+  await capture(async () => {
+    try { await httpClient.post('/replays', {}); } catch (e) { caught = e; }
+  });
+
+  assert.equal(caught.status, 504);
+  assert.equal(caught.type, 'discord-download-timeout');
+});
+
+// 백엔드 자체 문제와 백엔드가 Discord를 기다린 건 조치가 다르다.
+test('Discord 상류 실패는 target을 backend-discord로 남긴다', async () => {
+  for (const type of ['discord-download-timeout', 'discord-download-failed']) {
+    stubFetch(JSON.stringify({ type, status: 504, detail: '오류' }), { status: 504 });
+
+    const lines = await capture(async () => {
+      await assert.rejects(() => httpClient.post('/replays', {}, { guildId: '922118764437340230' }));
+    });
+
+    assert.equal(lines.error[0][1].target, 'backend-discord', `${type}이 backend로 분류됐다`);
+    assert.equal(lines.error[0][1].type, type);
+  }
+});
+
+test('그 외 백엔드 실패는 target이 backend다', async () => {
+  stubFetch(JSON.stringify({ type: 'system-error', status: 500, detail: '오류' }), { status: 500 });
+
+  const lines = await capture(async () => {
+    await assert.rejects(() => httpClient.get('/x'));
+  });
+
+  assert.equal(lines.error[0][1].target, 'backend');
+});
+
+// 백엔드 미기동 시 예전엔 로그가 0건이고 사용자에게 'fetch failed'가 노출됐다.
+test('연결 실패는 원인과 함께 기록되고 한국어 메시지가 된다', async () => {
+  global.fetch = async () => {
+    throw Object.assign(new TypeError('fetch failed'), {
+      cause: Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+    });
+  };
+
+  let caught;
+  const lines = await capture(async () => {
+    try { await httpClient.get('/x', {}, { guildId: '922118764437340230' }); }
+    catch (e) { caught = e; }
+  });
+
+  assert.equal(lines.error.length, 1);
+  const detail = lines.error[0][1];
+  assert.equal(detail.target, 'backend');
+  assert.equal(detail.reason, 'unreachable');
+  assert.equal(detail.cause, 'ECONNREFUSED');
+  assert.equal(detail.guild, '922118764437340230');
+
+  assert.equal(caught.message, '서버에 연결할 수 없습니다');
+  assert.equal(caught.status, 0); // 5xx 숨김 분기를 타지 않아 이 문구가 사용자에게 간다
+  assert.equal(caught.type, 'connection-failed'); // 타임아웃과 구분돼야 안내가 갈린다
+});
+
+test('타임아웃 로그는 target이 backend다', async () => {
+  global.fetch = async () => { throw Object.assign(new Error('a'), { name: 'TimeoutError' }); };
+
+  const lines = await capture(async () => {
+    await assert.rejects(() => httpClient.get('/x'));
+  });
+
+  assert.equal(lines.error[0][1].target, 'backend');
+  assert.equal(lines.error[0][1].stage, 'response');
 });

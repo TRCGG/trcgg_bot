@@ -1,4 +1,4 @@
-const { BotError } = require('./errors');
+const { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES } = require('./errors');
 
 const BaseURL = process.env.BASE_URL;
 const BotHeader = process.env.DISCORD_BOT_SECRET;
@@ -7,6 +7,10 @@ const REQUEST_TIMEOUT_MS = 45000;
 
 const isTimeout = (error) => error?.name === 'AbortError' || error?.name === 'TimeoutError';
 
+// 우리 서버 문제와 외부 지연은 조치가 달라 로그에서 갈라야 한다.
+const failureTarget = (body) =>
+  DISCORD_UPSTREAM_TYPES.has(body?.type) ? 'backend-discord' : 'backend';
+
 /**
  * 타임아웃은 어느 API가 몇 초 만에 끊겼는지가 없으면 원인을 좁힐 수 없다.
  * stage로 응답을 아예 못 받은 건지, 헤더는 받고 본문에서 멈춘 건지 구분한다.
@@ -14,11 +18,18 @@ const isTimeout = (error) => error?.name === 'AbortError' || error?.name === 'Ti
 const timeoutError = (stage, context) => {
   console.error('Request Timeout:', {
     time: new Date().toISOString(),
+    target: 'backend',
     stage,
     timeoutMs: REQUEST_TIMEOUT_MS,
     ...context,
   });
-  return new Error('요청 시간 초과');
+  // status 0은 responseHandler의 5xx 숨김 분기를 타지 않아 이 문구가 사용자에게 그대로 간다.
+  return new BotError('요청 시간 초과', 0, {
+    type: BotErrorType.TIMEOUT,
+    method: context.method,
+    url: context.url,
+    guildId: context.guild,
+  });
 };
 
 // 길드 id는 대부분 base64로 인코딩돼 넘어오지만 토너먼트 경로는 원본을 그대로 쓴다.
@@ -64,7 +75,21 @@ const httpClient = {
       if (isTimeout(error)) {
         throw timeoutError('response', { method, url: cleanUrl, guild });
       }
-      throw error;
+      // 연결 자체가 안 됐다 — 백엔드 미기동·DNS 실패. 여기서 안 남기면 어디에도 안 남고,
+      // responseHandler가 status 없는 에러를 4xx로 보고 'fetch failed'를 사용자에게 노출한다.
+      console.error('Request Failed:', {
+        time: new Date().toISOString(),
+        target: 'backend',
+        reason: 'unreachable',
+        method,
+        url: cleanUrl,
+        guild,
+        cause: error?.cause?.code ?? error?.message,
+      });
+      throw new BotError('서버에 연결할 수 없습니다', 0, {
+        type: BotErrorType.UNREACHABLE,
+        method, url: cleanUrl, guildId: guild,
+      });
     }
 
     // text로 먼저 읽는다. json()으로 바로 파싱하면 실패 시 본문이 그 자리에서 사라져
@@ -103,9 +128,11 @@ const httpClient = {
       } else {
         console.error('Response Error:', {
           time: new Date().toISOString(),
+          target: failureTarget(parsed),
           method,
           url: cleanUrl,
           status: response.status,
+          type: parsed?.type,
           guild,
           data: parsed ?? raw.slice(0, 300)
         });
@@ -113,6 +140,7 @@ const httpClient = {
 
       throw new BotError(message, response.status, {
         expected,
+        type: parsed?.type,
         method,
         url: cleanUrl,
         guildId: guild,
