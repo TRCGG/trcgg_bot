@@ -3,7 +3,23 @@ const { BotError } = require('./errors');
 const BaseURL = process.env.BASE_URL;
 const BotHeader = process.env.DISCORD_BOT_SECRET;
 
+const REQUEST_TIMEOUT_MS = 45000;
+
 const isTimeout = (error) => error?.name === 'AbortError' || error?.name === 'TimeoutError';
+
+/**
+ * 타임아웃은 어느 API가 몇 초 만에 끊겼는지가 없으면 원인을 좁힐 수 없다.
+ * stage로 응답을 아예 못 받은 건지, 헤더는 받고 본문에서 멈춘 건지 구분한다.
+ */
+const timeoutError = (stage, context) => {
+  console.error('Request Timeout:', {
+    time: new Date().toISOString(),
+    stage,
+    timeoutMs: REQUEST_TIMEOUT_MS,
+    ...context,
+  });
+  return new Error('요청 시간 초과');
+};
 
 // 길드 id는 대부분 base64로 인코딩돼 넘어오지만 토너먼트 경로는 원본을 그대로 쓴다.
 // 로그에서 같은 길드가 두 값으로 갈리면 집계가 안 되므로 원본 형태로 맞춘다.
@@ -33,7 +49,7 @@ const httpClient = {
         "Content-Type": "application/json",
         "x-discord-bot": BotHeader,
       },
-      signal: AbortSignal.timeout(45000), // 45초 후 자동 취소
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       ...fetchOptions,
     };
 
@@ -44,9 +60,9 @@ const httpClient = {
     try {
       response = await fetch(cleanUrl, config);
     } catch (error) {
+      // 응답 자체를 못 받았다 — 백엔드가 안 떴거나 첫 바이트까지 너무 느리다.
       if (isTimeout(error)) {
-        console.error('요청 시간 초과 (Timeout)');
-        throw new Error('요청 시간 초과');
+        throw timeoutError('response', { method, url: cleanUrl, guild });
       }
       throw error;
     }
@@ -58,11 +74,10 @@ const httpClient = {
     try {
       raw = await response.text();
     } catch (error) {
-      // 타임아웃은 헤더를 받은 뒤 본문 스트리밍 중에도 난다.
+      // 헤더는 받았는데 본문에서 멈췄다 — 백엔드가 응답을 시작하고도 못 끝냈다.
       // 여기서 안 걸러내면 빈 본문으로 보여 파싱 실패로 둔갑한다.
       if (isTimeout(error)) {
-        console.error('요청 시간 초과 (Timeout)');
-        throw new Error('요청 시간 초과');
+        throw timeoutError('body', { method, url: cleanUrl, status: response.status, guild });
       }
       // 실패 응답이면 상태코드만으로도 쓸모가 있으니 계속 진행한다.
       // 성공 응답이면 아래에서 던진다 — 못 읽은 본문을 빈 본문으로 넘기면 안 된다.
