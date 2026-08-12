@@ -65,20 +65,30 @@ test('detail이 message보다 우선한다', async () => {
   assert.equal(caught.message, 'detail 쪽');
 });
 
-test('타임아웃은 요청 시간 초과로 표면화된다', async () => {
+// 문자열 한 줄만 남기면 어느 API가 몇 초 만에 끊겼는지 알 수 없다.
+test('응답 단계 타임아웃은 API·길드와 함께 기록된다', async () => {
   global.fetch = async () => { throw Object.assign(new Error('aborted'), { name: 'TimeoutError' }); };
 
   let caught;
-  await capture(async () => {
-    try { await httpClient.get('/replays'); } catch (e) { caught = e; }
+  const lines = await capture(async () => {
+    try { await httpClient.get('/replays', {}, { guildId: '922118764437340230' }); }
+    catch (e) { caught = e; }
   });
 
   assert.equal(caught.message, '요청 시간 초과');
   assert.equal(caught instanceof (require('./errors').BotError), false); // 5xx 숨김 분기를 타면 안 된다
+
+  const [label, detail] = lines.error[0];
+  assert.match(label, /Timeout/);
+  assert.equal(detail.stage, 'response');
+  assert.equal(detail.method, 'GET');
+  assert.match(detail.url, /\/replays$/);
+  assert.equal(detail.guild, '922118764437340230');
+  assert.equal(detail.timeoutMs, 45000);
 });
 
-// 헤더만 받고 본문 스트리밍 중 끊기는 경우. 빈 본문으로 오해하면 원인이 사라진다.
-test('본문 읽는 중 타임아웃도 요청 시간 초과로 표면화된다', async () => {
+// 헤더만 받고 본문 스트리밍 중 끊기는 경우. 원인이 달라서 stage로 구분해야 한다.
+test('본문 단계 타임아웃은 stage로 구분해 기록된다', async () => {
   global.fetch = async () => ({
     ok: true,
     status: 200,
@@ -86,11 +96,13 @@ test('본문 읽는 중 타임아웃도 요청 시간 초과로 표면화된다'
   });
 
   let caught;
-  await capture(async () => {
+  const lines = await capture(async () => {
     try { await httpClient.get('/replays'); } catch (e) { caught = e; }
   });
 
   assert.equal(caught.message, '요청 시간 초과');
+  assert.equal(lines.error[0][1].stage, 'body');
+  assert.equal(lines.error[0][1].status, 200);
 });
 
 // 억제가 과하게 번지지 않았는지 — 선언하지 않은 코드는 그대로 에러여야 한다.
