@@ -76,9 +76,13 @@ test('권한이 있으면 저장 후 등록완료를 답장한다', async () => 
 // 원인이 다르면 사용자가 할 일도 다르다 — 재시도, 파일 축소, 관리자 호출로 갈린다.
 const { BotError } = require('../utils/errors');
 
+const { BotErrorType } = require('../utils/errors');
+
+// 실패를 주입해 사용자 응답과 로그를 함께 본다.
 const uploadWith = async (error) => {
   const replies = [];
-  saveCalls.length = 0;
+  const logs = [];
+  const originalSave = require.cache[replayServicePath].exports.save;
   const { msg } = makeUpload([
     PermissionsBitField.Flags.ViewChannel,
     PermissionsBitField.Flags.SendMessages,
@@ -87,27 +91,78 @@ const uploadWith = async (error) => {
 
   require.cache[replayServicePath].exports.save = async () => { throw error; };
   const orig = { error: console.error, warn: console.warn };
-  console.error = () => {}; console.warn = () => {};
-  try { await onMessage.execute({}, msg); } finally { Object.assign(console, orig); }
-
-  require.cache[replayServicePath].exports.save = async () => {
-    saveCalls.push([]); return { replayCode: 'RPY-x' };
-  };
-  return replies[0];
+  console.error = (...a) => logs.push(a); console.warn = () => {};
+  try { await onMessage.execute({}, msg); }
+  finally {
+    Object.assign(console, orig);
+    require.cache[replayServicePath].exports.save = originalSave; // 원본 stub 복원
+  }
+  return { reply: replies[0], logs };
 };
 
 test('리플 실패 원인별로 다른 안내를 보낸다', async () => {
-  assert.match(await uploadWith(new BotError('dup', 400)), /이미 등록된 리플 파일/);
-  assert.match(await uploadWith(new BotError('too large', 413)), /파일이 너무 큽니다/);
+  const say = async (error) => (await uploadWith(error)).reply;
+
+  assert.match(await say(new BotError('dup', 400)), /이미 등록된 리플 파일/);
+  assert.match(await say(new BotError('too large', 413)), /파일이 너무 큽니다/);
   assert.match(
-    await uploadWith(new BotError('오류', 504, { type: 'discord-download-timeout' })),
+    await say(new BotError('오류', 504, { type: 'discord-download-timeout' })),
     /Discord에서 파일을 받아오지 못했습니다/,
   );
   assert.match(
-    await uploadWith(new BotError('오류', 502, { type: 'discord-download-failed' })),
+    await say(new BotError('오류', 502, { type: 'discord-download-failed' })),
     /Discord에서 파일을 받아오지 못했습니다/,
   );
-  assert.match(await uploadWith(new BotError('연결 실패', 0)), /서버에 연결할 수 없습니다/);
-  assert.match(await uploadWith(new BotError('오류', 500)), /등록실패/);
-  assert.match(await uploadWith(new TypeError('boom')), /등록실패/);
+  assert.match(
+    await say(new BotError('요청 시간 초과', 0, { type: BotErrorType.TIMEOUT })),
+    /처리 시간이 초과됐습니다/,
+  );
+  assert.match(
+    await say(new BotError('연결 실패', 0, { type: BotErrorType.UNREACHABLE })),
+    /서버에 연결할 수 없습니다/,
+  );
+  assert.match(await say(new BotError('오류', 500)), /등록실패/);
+  assert.match(await say(new TypeError('boom')), /등록실패/);
+});
+
+// nginx도 502·504를 낸다. status만 보면 배포 중 pm2 reload가 만든 502를
+// Discord 탓으로 돌려, 로그(target=backend)와 사용자 안내가 서로 모순된다.
+test('type 없는 502·504는 Discord 탓으로 돌리지 않는다', async () => {
+  for (const status of [502, 504]) {
+    const { reply } = await uploadWith(new BotError(`HTTP ${status}`, status));
+    assert.doesNotMatch(reply, /Discord/, `${status}를 Discord 탓으로 돌렸다`);
+    assert.match(reply, /등록실패/);
+  }
+});
+
+// 우리 계약을 안 따르는 에러가 status 400을 들고 있어도 중복으로 오인하면 안 된다.
+test('BotError가 아니면 status가 있어도 중복으로 취급하지 않는다', async () => {
+  const foreign = Object.assign(new Error('타사 에러'), { status: 400 });
+  const { reply } = await uploadWith(foreign);
+  assert.doesNotMatch(reply, /이미 등록된/);
+  assert.match(reply, /등록실패/);
+});
+
+test('중복(400)만 로그를 남기지 않고 나머지는 원인과 함께 남긴다', async () => {
+  const dup = await uploadWith(new BotError('dup', 400));
+  assert.equal(dup.logs.length, 0, '중복 등록은 정상 결과라 에러 로그를 남기지 않는다');
+
+  const failed = await uploadWith(new BotError('오류', 504, { type: 'discord-download-timeout' }));
+  assert.equal(failed.logs.length, 1);
+  const detail = failed.logs[0][1];
+  assert.equal(detail.status, 504);
+  assert.equal(detail.type, 'discord-download-timeout');
+  assert.equal(detail.guild, 'G_TEST');
+  assert.equal(detail.file, 'match');
+
+  // 무로그 대상은 400 하나뿐이다. 다른 상태코드가 여기 섞이면 장애가 조용히 묻힌다.
+  for (const error of [
+    new BotError('연결 실패', 0, { type: BotErrorType.UNREACHABLE }),
+    new BotError('요청 시간 초과', 0, { type: BotErrorType.TIMEOUT }),
+    new BotError('오류', 500),
+    new BotError('too large', 413),
+  ]) {
+    const { logs } = await uploadWith(error);
+    assert.equal(logs.length >= 1, true, `status ${error.status}(${error.type}) 로그가 없다`);
+  }
 });

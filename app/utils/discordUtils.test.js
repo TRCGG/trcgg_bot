@@ -205,8 +205,11 @@ test('safeSend의 Discord 타임아웃도 action=send로 구분된다', async ()
   const errors = [];
   const orig = console.error;
   console.error = (...a) => errors.push(a);
-  try { await safeSend(msg.channel, 'hi'); } finally { console.error = orig; }
+  let result;
+  try { result = await safeSend(msg.channel, 'hi'); } finally { console.error = orig; }
 
+  // true를 주면 safeReply의 답장 실패 폴백이 전달 성공으로 오인한다.
+  assert.equal(result, false);
   assert.equal(errors[0][1].target, 'discord');
   assert.equal(errors[0][1].action, 'send');
 });

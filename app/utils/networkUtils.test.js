@@ -76,7 +76,9 @@ test('응답 단계 타임아웃은 API·길드와 함께 기록된다', async (
   });
 
   assert.equal(caught.message, '요청 시간 초과');
-  assert.equal(caught instanceof (require('./errors').BotError), false); // 5xx 숨김 분기를 타면 안 된다
+  // status 0이라 responseHandler의 5xx 숨김 분기를 타지 않는다 — 이 문구가 사용자에게 간다.
+  assert.equal(caught.status, 0);
+  assert.equal(caught.type, 'request-timeout');
 
   const [label, detail] = lines.error[0];
   assert.match(label, /Timeout/);
@@ -360,6 +362,7 @@ test('연결 실패는 원인과 함께 기록되고 한국어 메시지가 된�
 
   assert.equal(caught.message, '서버에 연결할 수 없습니다');
   assert.equal(caught.status, 0); // 5xx 숨김 분기를 타지 않아 이 문구가 사용자에게 간다
+  assert.equal(caught.type, 'connection-failed'); // 타임아웃과 구분돼야 안내가 갈린다
 });
 
 test('타임아웃 로그는 target이 backend다', async () => {

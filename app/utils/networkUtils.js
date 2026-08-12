@@ -1,4 +1,4 @@
-const { BotError } = require('./errors');
+const { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES } = require('./errors');
 
 const BaseURL = process.env.BASE_URL;
 const BotHeader = process.env.DISCORD_BOT_SECRET;
@@ -7,12 +7,9 @@ const REQUEST_TIMEOUT_MS = 45000;
 
 const isTimeout = (error) => error?.name === 'AbortError' || error?.name === 'TimeoutError';
 
-// 백엔드가 Discord를 기다리다 못 끝낸 경우 (TRC-261 계약).
 // 우리 서버 문제와 외부 지연은 조치가 달라 로그에서 갈라야 한다.
-const DISCORD_UPSTREAM_TYPES = new Set(['discord-download-timeout', 'discord-download-failed']);
-
-const failureTarget = (error) =>
-  DISCORD_UPSTREAM_TYPES.has(error?.type) ? 'backend-discord' : 'backend';
+const failureTarget = (body) =>
+  DISCORD_UPSTREAM_TYPES.has(body?.type) ? 'backend-discord' : 'backend';
 
 /**
  * 타임아웃은 어느 API가 몇 초 만에 끊겼는지가 없으면 원인을 좁힐 수 없다.
@@ -26,7 +23,13 @@ const timeoutError = (stage, context) => {
     timeoutMs: REQUEST_TIMEOUT_MS,
     ...context,
   });
-  return new Error('요청 시간 초과');
+  // status 0은 responseHandler의 5xx 숨김 분기를 타지 않아 이 문구가 사용자에게 그대로 간다.
+  return new BotError('요청 시간 초과', 0, {
+    type: BotErrorType.TIMEOUT,
+    method: context.method,
+    url: context.url,
+    guildId: context.guild,
+  });
 };
 
 // 길드 id는 대부분 base64로 인코딩돼 넘어오지만 토너먼트 경로는 원본을 그대로 쓴다.
@@ -84,6 +87,7 @@ const httpClient = {
         cause: error?.cause?.code ?? error?.message,
       });
       throw new BotError('서버에 연결할 수 없습니다', 0, {
+        type: BotErrorType.UNREACHABLE,
         method, url: cleanUrl, guildId: guild,
       });
     }
