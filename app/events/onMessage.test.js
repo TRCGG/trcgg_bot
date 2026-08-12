@@ -72,3 +72,42 @@ test('권한이 있으면 저장 후 등록완료를 답장한다', async () => 
   assert.equal(saveCalls.length, 1);
   assert.equal(calls.reply, 1);
 });
+
+// 원인이 다르면 사용자가 할 일도 다르다 — 재시도, 파일 축소, 관리자 호출로 갈린다.
+const { BotError } = require('../utils/errors');
+
+const uploadWith = async (error) => {
+  const replies = [];
+  saveCalls.length = 0;
+  const { msg } = makeUpload([
+    PermissionsBitField.Flags.ViewChannel,
+    PermissionsBitField.Flags.SendMessages,
+  ]);
+  msg.reply = async (text) => { replies.push(text); };
+
+  require.cache[replayServicePath].exports.save = async () => { throw error; };
+  const orig = { error: console.error, warn: console.warn };
+  console.error = () => {}; console.warn = () => {};
+  try { await onMessage.execute({}, msg); } finally { Object.assign(console, orig); }
+
+  require.cache[replayServicePath].exports.save = async () => {
+    saveCalls.push([]); return { replayCode: 'RPY-x' };
+  };
+  return replies[0];
+};
+
+test('리플 실패 원인별로 다른 안내를 보낸다', async () => {
+  assert.match(await uploadWith(new BotError('dup', 400)), /이미 등록된 리플 파일/);
+  assert.match(await uploadWith(new BotError('too large', 413)), /파일이 너무 큽니다/);
+  assert.match(
+    await uploadWith(new BotError('오류', 504, { type: 'discord-download-timeout' })),
+    /Discord에서 파일을 받아오지 못했습니다/,
+  );
+  assert.match(
+    await uploadWith(new BotError('오류', 502, { type: 'discord-download-failed' })),
+    /Discord에서 파일을 받아오지 못했습니다/,
+  );
+  assert.match(await uploadWith(new BotError('연결 실패', 0)), /서버에 연결할 수 없습니다/);
+  assert.match(await uploadWith(new BotError('오류', 500)), /등록실패/);
+  assert.match(await uploadWith(new TypeError('boom')), /등록실패/);
+});
