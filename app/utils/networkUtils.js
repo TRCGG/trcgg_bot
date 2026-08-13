@@ -7,7 +7,6 @@ const REQUEST_TIMEOUT_MS = 45000;
 
 const isTimeout = (error) => error?.name === 'AbortError' || error?.name === 'TimeoutError';
 
-// 우리 서버 문제와 외부 지연은 조치가 달라 로그에서 갈라야 한다.
 const failureTarget = (body) =>
   DISCORD_UPSTREAM_TYPES.has(body?.type) ? 'backend-discord' : 'backend';
 
@@ -71,12 +70,10 @@ const httpClient = {
     try {
       response = await fetch(cleanUrl, config);
     } catch (error) {
-      // 응답 자체를 못 받았다 — 백엔드가 안 떴거나 첫 바이트까지 너무 느리다.
       if (isTimeout(error)) {
         throw timeoutError('response', { method, url: cleanUrl, guild });
       }
-      // 연결 자체가 안 됐다 — 백엔드 미기동·DNS 실패. 여기서 안 남기면 어디에도 안 남고,
-      // responseHandler가 status 없는 에러를 4xx로 보고 'fetch failed'를 사용자에게 노출한다.
+      // 안 남기면 어디에도 안 남고, status가 없어 responseHandler가 'fetch failed'를 그대로 노출한다.
       console.error('Request Failed:', {
         time: new Date().toISOString(),
         target: 'backend',
@@ -99,20 +96,17 @@ const httpClient = {
     try {
       raw = await response.text();
     } catch (error) {
-      // 헤더는 받았는데 본문에서 멈췄다 — 백엔드가 응답을 시작하고도 못 끝냈다.
       // 여기서 안 걸러내면 빈 본문으로 보여 파싱 실패로 둔갑한다.
       if (isTimeout(error)) {
         throw timeoutError('body', { method, url: cleanUrl, status: response.status, guild });
       }
-      // 실패 응답이면 상태코드만으로도 쓸모가 있으니 계속 진행한다.
-      // 성공 응답이면 아래에서 던진다 — 못 읽은 본문을 빈 본문으로 넘기면 안 된다.
+      // 실패 응답은 상태코드만으로도 쓸모가 있어 계속 진행하고, 성공 응답은 아래에서 던진다.
       readFailure = error;
     }
 
     let parsed = null;
     try { parsed = raw ? JSON.parse(raw) : null; } catch { /* JSON이 아닌 응답 */ }
 
-    // 응답 코드가 200이 아닐 경우
     if (!response.ok) {
       // detail → message 우선순위와 문자열을 바꾸면 안 된다.
       // recordService가 message 완전일치로 404를 분기한다 (2792cb5).
@@ -120,8 +114,7 @@ const httpClient = {
         || (raw ? `HTTP ${response.status}` : `HTTP ${response.status} (빈 응답)`);
       const expected = expectedStatuses.includes(response.status);
 
-      // console.warn은 console.error와 같은 stderr로 나가 pm2 error.log에 그대로 쌓인다.
-      // 정상 분기를 error.log에서 빼려면 stdout(console.log)이어야 한다.
+      // console.warn도 stderr라 error.log에 쌓인다. 빼려면 stdout이어야 한다.
       // 지우지는 않는다 — 한 엔드포인트가 통째로 깨진 걸 놓치면 안 된다.
       if (expected) {
         console.log(`[expected] ${response.status} ${method} ${cleanUrl} guild=${guild ?? '-'} — ${message}`);
@@ -151,11 +144,10 @@ const httpClient = {
     // 본문을 못 읽은 걸 204(본문 없음)로 오해하면 호출부가 undefined를 정상값으로 받는다.
     if (readFailure) throw readFailure;
 
-    // 204 등 본문 없는 성공 응답. 파싱 실패로 취급하면 안 된다.
     if (!raw) return undefined;
 
     if (!parsed) {
-      // 프록시가 200에 로그인 페이지를 주는 식이면 여기서 안 남기면 어디에도 안 남는다.
+      // 프록시가 200에 로그인 페이지를 주는 경우. 여기서 안 남기면 어디에도 안 남는다.
       console.error('Response Parse Error:', {
         time: new Date().toISOString(),
         method,

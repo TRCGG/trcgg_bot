@@ -2,21 +2,16 @@ const { BotError } = require('./errors');
 const { safeReply } = require('./discordUtils');
 
 module.exports = {
-  // 성공 처리
   success: (msg, text) => safeReply(msg, `✅ ${text}`),
 
-  // 에러 처리
-  // BotError 5xx: 시스템 에러 → 메시지 숨김
-  // BotError 4xx: 비즈니스 에러 → 백엔드 메시지 노출
-  // 그 외 (로컬 유효성 등): 메시지 노출
+  // 5xx는 백엔드 내부 메시지를 감추고, 나머지는 그대로 노출한다.
   error: (msg, error) => {
     if (error instanceof BotError && error.status >= 500) {
-      console.error(error);
+      // BotError는 networkUtils에서만 만들어지므로 이미 기록됐다. 여기서 또 남기면 중복이다.
       return safeReply(msg, `⚠️ 오류가 발생했습니다.`);
     }
     return safeReply(msg, `⚠️ ${error.message || "알 수 없는 오류"}`);
   },
 
-  // 권한 없음
   noAuth: (msg) => safeReply(msg, "⛔ 권한이 없습니다."),
 };

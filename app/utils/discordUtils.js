@@ -31,8 +31,7 @@ const FLAG_NAMES = new Map(
 const requiredFlags = (channel, payload) => {
   const flags = [PermissionsBitField.Flags.ViewChannel];
 
-  // 스레드 게시는 SendMessages가 아니라 SendMessagesInThreads를 본다.
-  // 부모 채널만 막고 스레드는 열어두는 설정이 흔해, 구분하지 않으면 보낼 수 있는데도 폴백한다.
+  // 부모 채널만 막고 스레드는 열어두는 설정이 흔하다. 구분하지 않으면 보낼 수 있는데도 실패 처리한다.
   flags.push(
     typeof channel.isThread === 'function' && channel.isThread()
       ? PermissionsBitField.Flags.SendMessagesInThreads
@@ -77,8 +76,7 @@ const missingPermissions = (channel, payload) => {
     .map((flag) => FLAG_NAMES.get(flag) ?? String(flag));
 };
 
-// discord.js REST는 자체 타임아웃(기본 15초)에서 abort로 끊는다. Discord 쪽 지연은
-// 권한 문제와 조치가 달라, 같은 '답장 실패'로 뭉개면 원인을 못 좁힌다.
+// discord.js REST는 자체 타임아웃(기본 15초)에서 abort로 끊는다.
 const isDiscordTimeout = (error) =>
   error?.name === 'AbortError' || error?.name === 'TimeoutError';
 
@@ -86,10 +84,8 @@ const isPermissionDenied = (error) =>
   error?.code === DiscordCode.MISSING_PERMISSIONS ||
   error?.code === DiscordCode.MISSING_ACCESS;
 
-// 50035는 폼 바디 오류 전반이라 message_reference를 지목한 경우에만 답장 실패로 본다.
-// 그 외 50035(잘못된 페이로드)는 폴백으로 숨기지 않고 그대로 드러낸다.
-// 응답에서 키는 소문자(message_reference), 코드는 대문자(MESSAGE_REFERENCE_UNKNOWN_MESSAGE)로
-// 오므로 대소문자를 맞춰 비교한다.
+// 50035는 폼 바디 오류 전반이라, message_reference 지목이 아닌 것까지 폴백하면 진짜 페이로드
+// 버그를 숨긴다. 키는 소문자·코드는 대문자로 와서 대소문자를 맞춰 비교한다.
 const isStaleReference = (error) => {
   if (error?.code === DiscordCode.UNKNOWN_MESSAGE) return true;
   if (error?.code !== DiscordCode.INVALID_FORM_BODY) return false;
@@ -110,7 +106,7 @@ const markIfGone = (channelId, error) => {
 const safeSend = async (channel, payload) => {
   try {
     if (!canSend(channel, payload)) {
-      // 스케줄·콜백처럼 고정 채널로 보내는 경로는 조용히 실패하면 영원히 모른다.
+      // 스케줄 크론처럼 알릴 사용자도 반환값을 보는 곳도 없는 호출부가 있다. 여기가 유일한 흔적이다.
       console.warn('[safeSend] 전송 불가', {
         guild: channel?.guild?.id,
         channel: channel?.id,
@@ -165,10 +161,9 @@ const safeReply = async (msg, payload) => {
         }
 
         if (isStaleReference(error)) {
-          // 원본이 지워졌을 뿐이니 같은 채널에 일반 전송으로 떨군다.
           if (await safeSend(msg.channel, payload)) return true;
         } else if (!isPermissionDenied(error) && error?.code !== DiscordCode.UNKNOWN_CHANNEL) {
-          // 권한·채널 문제가 아니면 폴백해도 같은 이유로 실패한다. 숨기지 않고 드러낸다.
+          // 권한·채널 문제가 아니면 폴백해도 같은 이유로 실패한다.
           console.warn('[safeReply] 답장 실패', {
             guild: msg.guild?.id, channel: msg.channel?.id, code: error?.code,
           });

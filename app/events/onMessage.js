@@ -3,8 +3,7 @@ const replayService = require("../services/replayService");
 const { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES } = require("../utils/errors");
 const { safeReply } = require("../utils/discordUtils");
 
-// 원인이 다르면 사용자가 할 일도 다르다. 재시도하면 되는지, 파일을 줄여야 하는지,
-// 관리자를 불러야 하는지가 갈린다. 백엔드 응답 계약은 TRC-261.
+// 백엔드 응답 계약은 TRC-261.
 const describeReplayFailure = (error, fileName) => {
   // status가 있어도 BotError가 아니면 우리 계약을 따르는 값이 아니다.
   if (!(error instanceof BotError)) return `:red_circle: 등록실패: ${fileName}`;
@@ -41,7 +40,6 @@ module.exports = {
     const prefix = "!";
     if (!msg.inGuild()) return; // DM 차단 및 길드 내 메시지만 처리
     if (msg.author.bot) return;
-    // 첨부파일이 있는 경우
     if (msg.attachments.size > 0) {
       if (msg.guild.id === "922118764437340230") return;
 
@@ -76,15 +74,13 @@ module.exports = {
         } catch (error) {
           const isDuplicate = error instanceof BotError && error.status === 400;
           if (!isDuplicate) {
+            // 어느 파일인지는 여기만 안다. 원인은 networkUtils가 이미 남겼다.
             console.error('replays error:', {
               guild: guildId,
               file: fileNameWithoutExt,
               status: error?.status,
-              type: error?.type,
-              message: error?.message,
             });
-            // BotError는 networkUtils가 url·status·본문까지 이미 남겼다.
-            // 그 외(fetch 실패·TypeError 등)는 여기가 유일한 기록이라 스택이 필요하다.
+            // BotError가 아니면 여기가 유일한 기록이라 스택이 필요하다.
             if (!(error instanceof BotError)) console.error(error);
           }
           await safeReply(msg, describeReplayFailure(error, fileNameWithoutExt));
