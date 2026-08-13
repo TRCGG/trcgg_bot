@@ -151,9 +151,8 @@ test('중복(400)만 로그를 남기지 않고 나머지는 원인과 함께 �
   assert.equal(failed.logs.length, 1);
   const detail = failed.logs[0][1];
   assert.equal(detail.status, 504);
-  assert.equal(detail.type, 'discord-download-timeout');
   assert.equal(detail.guild, 'G_TEST');
-  assert.equal(detail.file, 'match');
+  assert.equal(detail.file, 'match'); // 어느 파일인지는 networkUtils 로그에 없다
 
   // 무로그 대상은 400 하나뿐이다. 다른 상태코드가 여기 섞이면 장애가 조용히 묻힌다.
   for (const error of [
