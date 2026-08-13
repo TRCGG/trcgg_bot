@@ -2,6 +2,7 @@ const stringUtils = require("../utils/stringUtils");
 const guildService = require("../services/guildService");
 const ADMIN_ID = process.env.ADMIN_ID;
 const res = require('../utils/responseHandler');
+const { safeReply } = require('../utils/discordUtils');
 
 
 /**
@@ -15,7 +16,7 @@ module.exports = [
       if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
         const result = await guildService.get_guilds_list();
-        await msg.reply(result);
+        await safeReply(msg, result);
       } catch (error) {
         res.error(msg, error);
       }
@@ -28,7 +29,7 @@ module.exports = [
       if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
         const result = await guildService.show_guild_list(client);
-        await msg.reply(result);
+        await safeReply(msg, result);
       } catch (error) {
         res.error(msg, error);
       }
@@ -40,8 +41,9 @@ module.exports = [
     run: async (client, msg, args) => {
       if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
-        const result = await guildService.leave_discord_guild(client, msg, args);
-        await msg.reply(result);
+        // leave_discord_guild가 성공·실패 응답을 직접 보낸다. 여기서 또 답장하면
+        // 반환값이 undefined라 빈 응답을 시도하게 된다.
+        await guildService.leave_discord_guild(client, msg, args);
       } catch (error) {
         res.error(msg, error);
       }

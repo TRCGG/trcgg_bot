@@ -15,7 +15,8 @@ const prefix = '/replays';
  */
 const post_replay = async(data) => {
 	const url = `${prefix}`;
-	return httpClient.post(url, data);
+	// 이미 등록된 리플 재업로드는 정상 분기다 (onMessage가 400을 안내 메시지로 처리).
+	return httpClient.post(url, data, { expectedStatuses: [400], guildId: data?.guild?.id });
 }
 
 /**
@@ -24,7 +25,7 @@ const post_replay = async(data) => {
  */
 const delete_game = async(gameId, guildId, actorMemberId) => {
 	const url = `/matches/${guildId}/games/${gameId}`;
-	return httpClient.delete(url, { actorMemberId });
+	return httpClient.delete(url, { actorMemberId }, { guildId });
 }
 
 module.exports = {

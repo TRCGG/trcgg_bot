@@ -17,7 +17,7 @@ const prefix = '/tournament';
  */
 const post_codes = async ({ guildId, channelId, count, gameType }) => {
 	const url = `${prefix}/codes`;
-	return httpClient.post(url, { guildId, channelId, count, gameType });
+	return httpClient.post(url, { guildId, channelId, count, gameType }, { guildId });
 };
 
 /**
@@ -28,7 +28,7 @@ const post_codes = async ({ guildId, channelId, count, gameType }) => {
  */
 const get_next_code = async (guildId) => {
 	const url = `${prefix}/next-code`;
-	return httpClient.get(url, { guildId });
+	return httpClient.get(url, { guildId }, { guildId });
 };
 
 module.exports = {

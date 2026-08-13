@@ -1,6 +1,34 @@
 const { Events } = require("discord.js");
 const replayService = require("../services/replayService");
-const { BotError } = require("../utils/errors");
+const { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES } = require("../utils/errors");
+const { safeReply } = require("../utils/discordUtils");
+
+// 백엔드 응답 계약은 TRC-261.
+const describeReplayFailure = (error, fileName) => {
+  // status가 있어도 BotError가 아니면 우리 계약을 따르는 값이 아니다.
+  if (!(error instanceof BotError)) return `:red_circle: 등록실패: ${fileName}`;
+
+  // 원인은 type으로만 판단한다. 프록시(nginx)도 502·504를 내므로 status만 보면
+  // 배포 중 pm2 reload가 만든 502를 Discord 탓으로 돌린다.
+  if (DISCORD_UPSTREAM_TYPES.has(error.type)) {
+    return `:hourglass: Discord에서 파일을 받아오지 못했습니다. 잠시 후 다시 올려주세요: ${fileName}`;
+  }
+  if (error.type === BotErrorType.TIMEOUT) {
+    return `:hourglass: 처리 시간이 초과됐습니다. 잠시 후 다시 올려주세요: ${fileName}`;
+  }
+  if (error.type === BotErrorType.UNREACHABLE) {
+    return `:red_circle: 서버에 연결할 수 없습니다. 관리자에게 알려주세요: ${fileName}`;
+  }
+
+  switch (error.status) {
+    case 400:
+      return `:warning: 이미 등록된 리플 파일: ${fileName}`;
+    case 413:
+      return `:warning: 파일이 너무 큽니다: ${fileName}`;
+    default:
+      return `:red_circle: 등록실패: ${fileName}`;
+  }
+};
 
 /**
  * 디코 메시지 발생 이벤트
@@ -12,7 +40,6 @@ module.exports = {
     const prefix = "!";
     if (!msg.inGuild()) return; // DM 차단 및 길드 내 메시지만 처리
     if (msg.author.bot) return;
-    // 첨부파일이 있는 경우
     if (msg.attachments.size > 0) {
       if (msg.guild.id === "922118764437340230") return;
 
@@ -43,14 +70,20 @@ module.exports = {
             replayCode = result.replayCode;
           }
 
-          msg.reply(`:green_circle: 등록완료: ${replayCode}`);
+          await safeReply(msg, `:green_circle: 등록완료: ${replayCode}`);
         } catch (error) {
-          if (error instanceof BotError && error.status === 400) {
-            msg.reply(`:warning: 이미 등록된 리플 파일: ${fileNameWithoutExt}`);
-          } else {
-            console.error('replays error:', error);
-            msg.reply(`:red_circle: 등록실패: ${fileNameWithoutExt}`);
+          const isDuplicate = error instanceof BotError && error.status === 400;
+          if (!isDuplicate) {
+            // 어느 파일인지는 여기만 안다. 원인은 networkUtils가 이미 남겼다.
+            console.error('replays error:', {
+              guild: guildId,
+              file: fileNameWithoutExt,
+              status: error?.status,
+            });
+            // BotError가 아니면 여기가 유일한 기록이라 스택이 필요하다.
+            if (!(error instanceof BotError)) console.error(error);
           }
+          await safeReply(msg, describeReplayFailure(error, fileNameWithoutExt));
         }
       }
       return;
@@ -64,10 +97,11 @@ module.exports = {
 
     try {
       let cmd = client.commands.get(command);
-      if (cmd) cmd.run(client, msg, args); // 명령어 실행
+      // await 없이는 명령어 내부의 비동기 예외가 아래 catch를 그냥 통과한다.
+      if (cmd) await cmd.run(client, msg, args);
     } catch (error) {
       console.error(error);
-      msg.reply("명령어 실행 중 오류가 발생했습니다.");
+      await safeReply(msg, "명령어 실행 중 오류가 발생했습니다.");
     }
   },
 };

@@ -1,6 +1,9 @@
 const httpClient = require('../utils/networkUtils');
 const prefix = '/matches';
 
+// 닉네임 오타·미등록 멤버 조회는 정상 분기다. 에러 로그로 취급하지 않는다.
+const MEMBER_MAY_BE_MISSING = { expectedStatuses: [404] };
+
 /**
  * 전적 api call
  */
@@ -13,7 +16,7 @@ const get_all_record = async(riotName, riotNameTag, guildId) => {
   if(riotNameTag){
     url = `${url}?riotNameTag=${riotNameTag}`;
   }
-  return httpClient.get(url);
+  return httpClient.get(url, {}, { ...MEMBER_MAY_BE_MISSING, guildId });
 }
 
 /**
@@ -24,7 +27,7 @@ const get_recent_record = async(riotName, riotNameTag, guildId) => {
   if(riotNameTag){
     url = `${url}?riotNameTag=${riotNameTag}`;
   }
-  return httpClient.get(url);
+  return httpClient.get(url, {}, { ...MEMBER_MAY_BE_MISSING, guildId });
 }
 
 /**
@@ -32,7 +35,7 @@ const get_recent_record = async(riotName, riotNameTag, guildId) => {
  */
 const get_result_record = async(gameId, guild_id) => {
   const url = `${prefix}/${guild_id}/games/${gameId}`;
-  return httpClient.get(url);
+  return httpClient.get(url, {}, { guildId: guild_id });
 }
 
 module.exports = {

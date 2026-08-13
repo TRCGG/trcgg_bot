@@ -20,7 +20,7 @@ const get_guilds = async () => {
  */
 const delete_guild = async (guildId) => {
   const url = `${prefix}/${guildId}`;
-  return httpClient.delete(url);
+  return httpClient.delete(url, undefined, { guildId });
 };
 
 module.exports = {

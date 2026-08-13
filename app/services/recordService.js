@@ -20,19 +20,30 @@ const get_all_record_embed = async(msg, args) => {
 
   const guildId = stringUtils.encodeGuildId(msg.guild.id);
 
-  let result, games;
-  try {
-    [result, games] = await Promise.all([
-      recordClient.get_all_record(riotName, riotNameTag, guildId),
-      recordClient.get_recent_record(riotName, riotNameTag, guildId),
-    ]);
-  } catch (error) {
-    if (error?.message === 'guild member not found') {
-      const tagDisplay = riotNameTag ? `#${riotNameTag}` : '';
-      throw new Error(`**${riotName}${tagDisplay}** 검색 결과가 없습니다.`);
-    }
-    throw error;
+  // Promise.all은 먼저 도착한 rejection을 던져 어느 실패가 보일지 경합에 맡긴다.
+  // 병렬성은 유지하고(2792cb5) 결과를 모두 받아 우선순위로 고른다.
+  const [dashboard, recent] = await Promise.allSettled([
+    recordClient.get_all_record(riotName, riotNameTag, guildId),
+    recordClient.get_recent_record(riotName, riotNameTag, guildId),
+  ]);
+
+  // status만 보면 라우트 오타 같은 다른 404까지 "검색 결과 없음"으로 삼킨다.
+  const memberMissing = (r) =>
+    r.reason?.status === 404 && r.reason?.message === 'guild member not found';
+
+  const failures = [dashboard, recent].filter((r) => r.status === 'rejected');
+
+  // 진짜 장애가 다른 쪽 404에 가려 "검색 결과 없음"으로 둔갑하면 안 된다.
+  const realFailure = failures.find((r) => !memberMissing(r));
+  if (realFailure) throw realFailure.reason;
+
+  if (failures.length > 0) {
+    const tagDisplay = riotNameTag ? `#${riotNameTag}` : '';
+    throw new Error(`**${riotName}${tagDisplay}** 검색 결과가 없습니다.`);
   }
+
+  const result = dashboard.value;
+  const games = recent.value;
 
   if (!result) {
     return "데이터를 찾지 못했습니다";
