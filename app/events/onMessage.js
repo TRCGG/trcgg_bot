@@ -1,6 +1,6 @@
 const { Events } = require("discord.js");
 const replayService = require("../services/replayService");
-const { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES } = require("../utils/errors");
+const { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES, UNSUPPORTED_REPLAY_VERSION_TYPE } = require("../utils/errors");
 const { safeReply } = require("../utils/discordUtils");
 
 // 백엔드 응답 계약은 TRC-261.
@@ -18,6 +18,9 @@ const describeReplayFailure = (error, fileName) => {
   }
   if (error.type === BotErrorType.UNREACHABLE) {
     return `:red_circle: 서버에 연결할 수 없습니다. 관리자에게 알려주세요: ${fileName}`;
+  }
+  if (error.type === UNSUPPORTED_REPLAY_VERSION_TYPE) {
+    return `:warning: 구형 리플 파일(패치 14.11 이전)이라 등록할 수 없습니다: ${fileName}`;
   }
 
   switch (error.status) {
@@ -72,8 +75,8 @@ module.exports = {
 
           await safeReply(msg, `:green_circle: 등록완료: ${replayCode}`);
         } catch (error) {
-          const isDuplicate = error instanceof BotError && error.status === 400;
-          if (!isDuplicate) {
+          const isExpected400 = error instanceof BotError && error.status === 400;
+          if (!isExpected400) {
             // 어느 파일인지는 여기만 안다. 원인은 networkUtils가 이미 남겼다.
             console.error('replays error:', {
               guild: guildId,

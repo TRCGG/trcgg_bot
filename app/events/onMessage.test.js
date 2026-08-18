@@ -104,6 +104,10 @@ test('리플 실패 원인별로 다른 안내를 보낸다', async () => {
   const say = async (error) => (await uploadWith(error)).reply;
 
   assert.match(await say(new BotError('dup', 400)), /이미 등록된 리플 파일/);
+  assert.match(
+    await say(new BotError('구형', 400, { type: 'unsupported-replay-version' })),
+    /구형 리플 파일/,
+  );
   assert.match(await say(new BotError('too large', 413)), /파일이 너무 큽니다/);
   assert.match(
     await say(new BotError('오류', 504, { type: 'discord-download-timeout' })),
@@ -143,9 +147,12 @@ test('BotError가 아니면 status가 있어도 중복으로 취급하지 않는
   assert.match(reply, /등록실패/);
 });
 
-test('중복(400)만 로그를 남기지 않고 나머지는 원인과 함께 남긴다', async () => {
+test('안내로 끝나는 400만 로그를 남기지 않고 나머지는 원인과 함께 남긴다', async () => {
   const dup = await uploadWith(new BotError('dup', 400));
   assert.equal(dup.logs.length, 0, '중복 등록은 정상 결과라 에러 로그를 남기지 않는다');
+
+  const legacy = await uploadWith(new BotError('구형', 400, { type: 'unsupported-replay-version' }));
+  assert.equal(legacy.logs.length, 0, '구형 리플도 안내로 끝나는 정상 분기라 로그를 남기지 않는다');
 
   const failed = await uploadWith(new BotError('오류', 504, { type: 'discord-download-timeout' }));
   assert.equal(failed.logs.length, 1);
