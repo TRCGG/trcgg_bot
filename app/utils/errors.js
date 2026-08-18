@@ -31,4 +31,7 @@ const BotErrorType = {
 // 프록시가 내는 502·504와 상태코드가 같으므로 원인 판단은 반드시 이 type으로 한다.
 const DISCORD_UPSTREAM_TYPES = new Set(['discord-download-timeout', 'discord-download-failed']);
 
-module.exports = { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES };
+// 구형 리플(~패치 14.10) 미지원 거절 (백엔드 ProblemDetails.type)
+const UNSUPPORTED_REPLAY_VERSION_TYPE = 'unsupported-replay-version';
+
+module.exports = { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES, UNSUPPORTED_REPLAY_VERSION_TYPE };
