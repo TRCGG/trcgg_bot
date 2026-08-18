@@ -75,7 +75,6 @@ module.exports = {
 
           await safeReply(msg, `:green_circle: 등록완료: ${replayCode}`);
         } catch (error) {
-          // 400은 사용자 안내로 끝나는 정상 분기(중복·구형 리플)라 에러 로그를 남기지 않는다
           const isExpected400 = error instanceof BotError && error.status === 400;
           if (!isExpected400) {
             // 어느 파일인지는 여기만 안다. 원인은 networkUtils가 이미 남겼다.
