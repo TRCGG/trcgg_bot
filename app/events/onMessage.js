@@ -19,6 +19,9 @@ const describeReplayFailure = (error, fileName) => {
   if (error.type === BotErrorType.UNREACHABLE) {
     return `:red_circle: 서버에 연결할 수 없습니다. 관리자에게 알려주세요: ${fileName}`;
   }
+  if (error.type === "unsupported-replay-version") {
+    return `:warning: 구형 리플 파일(패치 14.11 이전)이라 등록할 수 없습니다: ${fileName}`;
+  }
 
   switch (error.status) {
     case 400:
@@ -72,8 +75,9 @@ module.exports = {
 
           await safeReply(msg, `:green_circle: 등록완료: ${replayCode}`);
         } catch (error) {
-          const isDuplicate = error instanceof BotError && error.status === 400;
-          if (!isDuplicate) {
+          // 400은 사용자 안내로 끝나는 정상 분기(중복·구형 리플)라 에러 로그를 남기지 않는다
+          const isExpected400 = error instanceof BotError && error.status === 400;
+          if (!isExpected400) {
             // 어느 파일인지는 여기만 안다. 원인은 networkUtils가 이미 남겼다.
             console.error('replays error:', {
               guild: guildId,
