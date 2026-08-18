@@ -1,6 +1,6 @@
 const { Events } = require("discord.js");
 const replayService = require("../services/replayService");
-const { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES } = require("../utils/errors");
+const { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES, UNSUPPORTED_REPLAY_VERSION_TYPE } = require("../utils/errors");
 const { safeReply } = require("../utils/discordUtils");
 
 // 백엔드 응답 계약은 TRC-261.
@@ -19,7 +19,7 @@ const describeReplayFailure = (error, fileName) => {
   if (error.type === BotErrorType.UNREACHABLE) {
     return `:red_circle: 서버에 연결할 수 없습니다. 관리자에게 알려주세요: ${fileName}`;
   }
-  if (error.type === "unsupported-replay-version") {
+  if (error.type === UNSUPPORTED_REPLAY_VERSION_TYPE) {
     return `:warning: 구형 리플 파일(패치 14.11 이전)이라 등록할 수 없습니다: ${fileName}`;
   }
 
