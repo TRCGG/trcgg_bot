@@ -46,15 +46,19 @@ module.exports = {
     if (msg.attachments.size > 0) {
       if (msg.guild.id === "922118764437340230") return;
 
+      // msg.member는 저장된 값이 아니라 멤버 캐시 조회 getter다. 첨부가 여러 개면
+      // 앞 파일의 업로드(수십 초)를 기다리는 사이 캐시 스윕이 걸려 null이 될 수 있으므로
+      // 루프에 들어가기 전에 한 번만 읽는다.
+      const createUser = msg.member?.nickname || msg.author.username;
+
       for (const [id, attachment] of msg.attachments) {
         const fileName = attachment.name;
         const fileUrl = attachment.url;
 
-        if (!fileName.endsWith(".rofl")) continue; 
+        if (!fileName.endsWith(".rofl")) continue;
 
         const guildId = msg.guild.id;
         const guildName = msg.guild.name;
-        const createUser = msg.member.nickname || msg.author.username;
         const fileNameWithoutExt = fileName.slice(0, -5);
         const gameType = '1'; // 1=일반내전/2=스크림/3=대회 — 리플 첨부는 항상 일반내전
 

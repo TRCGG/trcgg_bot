@@ -1,6 +1,6 @@
 const statisticsClient = require("../client/statisticsClient");
 const stringUtils = require("../utils/stringUtils");
-const ExcelJS = require('exceljs');
+const { createObjectCsvStringifier } = require('csv-writer');
 const { safeReply, safeSend } = require('../utils/discordUtils');
 
 const season = process.env.SEASON || "2025";
@@ -86,7 +86,7 @@ const get_master_of_champion_embed = async (msg, args) => {
 /**
  * @description !클랜통계
  */
-const send_excel_file = async (msg, seasonArg, month, guildId) => {
+const send_stats_file = async (msg, seasonArg, month, guildId) => {
   const userData = await statisticsClient.get_user_data(seasonArg, month, guildId);
   const targetSeason = seasonArg || season;
   const periodLabel = getPeriodLabel(targetSeason, month);
@@ -103,51 +103,48 @@ const send_excel_file = async (msg, seasonArg, month, guildId) => {
         parseFloat(b.winRate) - parseFloat(a.winRate)
     );
 
-    const excelData = sortedUserData.map((user) => ({
-      "닉네임": `${user.riotName}#${user.riotNameTag}`,
-      "총 게임 수": user.totalCount,
-      "승": user.win,
-      "패": user.lose,
-      "승률 (%)": `${user.winRate}%`,
+    const csvStringifier = createObjectCsvStringifier({
+      header: [
+        { id: "nickname", title: "닉네임" },
+        { id: "totalCount", title: "총 게임 수" },
+        { id: "win", title: "승" },
+        { id: "lose", title: "패" },
+        { id: "winRate", title: "승률 (%)" },
+      ],
+    });
+
+    const records = sortedUserData.map((user) => ({
+      nickname: `${user.riotName}#${user.riotNameTag}`,
+      totalCount: user.totalCount,
+      win: user.win,
+      lose: user.lose,
+      winRate: `${user.winRate}%`,
     }));
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("UserStats");
+    // BOM이 없으면 엑셀에서 열 때 한글이 깨진다.
+    const csvContent =
+      '\uFEFF' + csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(records);
 
-    worksheet.columns = [
-      { header: "닉네임", key: "닉네임", width: 25 },
-      { header: "총 게임 수", key: "총 게임 수", width: 10 },
-      { header: "승", key: "승", width: 5 },
-      { header: "패", key: "패", width: 5 },
-      { header: "승률 (%)", key: "승률 (%)", width: 10 },
-    ];
-
-    worksheet.addRows(excelData);
-
-    const excelBuffer = await workbook.xlsx.writeBuffer();
-
-    let fileName = `${targetSeason}시즌_전적통계.xlsx`;
+    let fileName = `${targetSeason}시즌_전적통계.csv`;
     if (month) {
-      fileName = `${targetSeason}시즌_${month}월_전적통계.xlsx`;
-    } else if (seasonArg) {
-      fileName = `${targetSeason}시즌_전적통계.xlsx`;
+      fileName = `${targetSeason}시즌_${month}월_전적통계.csv`;
     }
 
     const sent = await safeSend(msg.channel, {
-      content: `**${periodLabel} 클랜통계** 데이터를 엑셀 파일로 추출했습니다.`,
+      content: `**${periodLabel} 클랜통계** 데이터를 CSV 파일로 추출했습니다.`,
       files: [{
-        attachment: excelBuffer,
+        attachment: Buffer.from(csvContent, "utf8"),
         name: fileName
       }]
     });
 
     // 파일 전송은 AttachFiles까지 필요해 실패할 수 있다. 조용히 사라지지 않게 알린다.
     if (!sent) {
-      await safeReply(msg, ':warning: 엑셀 파일을 보내지 못했습니다. 봇의 채널 권한(파일 첨부)을 확인해주세요.');
+      await safeReply(msg, ':warning: 통계 파일을 보내지 못했습니다. 봇의 채널 권한(파일 첨부)을 확인해주세요.');
     }
 
   } catch (error) {
-    console.error("엑셀 파일 생성 중 오류 발생:", error);
+    console.error("클랜통계 CSV 생성 중 오류 발생:", error);
     throw error;
   }
 };
@@ -231,5 +228,5 @@ const getPeriodLabel = (targetSeason, month) => {
 
 module.exports = {
   get_master_of_champion_embed,
-  send_excel_file
+  send_stats_file
 }
