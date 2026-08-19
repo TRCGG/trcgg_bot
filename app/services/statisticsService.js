@@ -1,6 +1,5 @@
 const statisticsClient = require("../client/statisticsClient");
 const stringUtils = require("../utils/stringUtils");
-const ExcelJS = require('exceljs');
 const { safeReply, safeSend } = require('../utils/discordUtils');
 
 const season = process.env.SEASON || "2025";
@@ -97,6 +96,9 @@ const send_excel_file = async (msg, seasonArg, month, guildId) => {
   }
 
   try {
+    // 관리자 전용 명령 하나에만 쓰는데 최상단에서 require하면 상시 RSS 9.8MB를 잡는다.
+    const ExcelJS = require('exceljs');
+
     const sortedUserData = [...userData].sort(
       (a, b) =>
         b.totalCount - a.totalCount ||

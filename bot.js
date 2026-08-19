@@ -7,6 +7,14 @@ const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const fs = require('node:fs');
 const path = require('node:path');
 
+// 스위퍼 filter는 true를 반환한 항목을 **지운다**. 봇 자신이 지워지면 members.me가
+// null이 되고 discordUtils.canSend가 항상 false가 되어 전송이 조용히 전부 막히므로,
+// 자신은 남기고 자신을 식별할 수 없는 동안(로그인 전)에는 아무것도 지우지 않는다.
+const sweepAllButSelf = () => (entry) => {
+    const self = entry.client.user;
+    return Boolean(self) && entry.id !== self.id;
+};
+
 // 디스코드 설정
 const client = new Client({
     intents: [
@@ -17,6 +25,13 @@ const client = new Client({
 		GatewayIntentBits.MessageContent,
     ],
     partials: [Partials.Channel],
+    // discord.js 기본 스위퍼는 스레드만 청소한다. 메시지는 채널당 200개 상한만 있어
+    // 비활성 채널의 캐시가 영원히 남고, 멤버·유저는 상한조차 없다.
+    sweepers: {
+        messages: { interval: 300, lifetime: 900 },
+        guildMembers: { interval: 3600, filter: sweepAllButSelf },
+        users: { interval: 3600, filter: sweepAllButSelf },
+    },
 });
   
 client.commands = new Collection();
