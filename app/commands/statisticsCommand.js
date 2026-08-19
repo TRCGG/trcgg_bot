@@ -61,11 +61,11 @@ module.exports = [
       // 진행 안내는 나중에 지워야 해서 메시지 핸들이 필요하다(safeReply는 boolean만 준다).
       // 보낼 수 없는 채널이면 진행 안내는 건너뛰고 본 작업만 진행한다.
       const processingMsg = canSend(msg.channel)
-        ? await msg.reply("데이터를 수집하고 엑셀을 생성 중입니다... ⏳").catch(() => null)
+        ? await msg.reply("데이터를 수집하고 CSV를 생성 중입니다... ⏳").catch(() => null)
         : null;
 
       try {
-        await statsService.send_excel_file(msg, seasonArg, month, guildId);
+        await statsService.send_stats_file(msg, seasonArg, month, guildId);
         await processingMsg?.delete().catch(() => {});
       } catch (error) {
         await processingMsg?.delete().catch(() => {});
