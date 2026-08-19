@@ -9,7 +9,7 @@
 
 - **Runtime**: Node.js
 - **Framework**: discord.js ^14.18.0
-- **Libraries**: dotenv, node-cron, csv-writer, xlsx
+- **Libraries**: dotenv, node-cron, csv-writer
 - **Backend**: 외부 REST API 연동 (`BASE_URL` 환경변수로 설정)
 
 ---
@@ -28,7 +28,7 @@ trcgg_bot/
 │   ├── services/                 # 비즈니스 로직 레이어
 │   │   ├── recordService.js      # 전적 Embed 생성
 │   │   ├── replayService.js      # 리플레이 저장/삭제
-│   │   ├── statisticsService.js  # 통계 및 엑셀 생성
+│   │   ├── statisticsService.js  # 통계 및 CSV 생성
 │   │   ├── managementService.js  # 부캐, 계정 상태 관리
 │   │   └── guildService.js       # 길드 목록, 클랜원 관리
 │   ├── client/                   # API 호출 레이어
@@ -70,8 +70,8 @@ trcgg_bot/
 
 | 명령어 | 설명 | 권한 |
 |--------|------|------|
-| `!클랜통계` | 전체 기간 클랜 통계 엑셀 파일 다운로드 | 관리자 |
-| `!클랜통계 2025 12` | 특정 월 클랜 통계 엑셀 파일 다운로드 | 관리자 |
+| `!클랜통계` | 전체 기간 클랜 통계 CSV 파일 다운로드 | 관리자 |
+| `!클랜통계 2025 12` | 특정 월 클랜 통계 CSV 파일 다운로드 | 관리자 |
 
 ### 계정 관리
 
