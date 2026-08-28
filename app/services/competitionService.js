@@ -16,6 +16,7 @@ const STATUS_LABEL = { OPEN: '진행중', CLOSED: '종료' };
 // 대회 조회는 스크림+본경기 통합. 분리는 프론트가 API 필터로 한다.
 const COMPETITION_SCOPE = { gameType: '2,3' };
 const RECENT_GAMES_LIMIT = 100;
+const RANKING_MIN_GAMES_CAP = 3;
 
 /**
  * `!전적대회 닉네임 / 대회명` — 닉네임과 대회명 둘 다 공백을 가질 수 있어 `/`로 가른다.
@@ -35,11 +36,12 @@ const parseRecordArgs = (args) => {
  * @returns {Promise<Object>} match
  */
 const resolveCompetitionOrThrow = async (guildId, competitionName) => {
-	const { match, candidates } = await competitionClient.resolve_competition(guildId, competitionName);
+	const { match, candidates, truncated } = await competitionClient.resolve_competition(guildId, competitionName);
 	if (match) return match;
 	if (candidates && candidates.length > 0) {
 		const list = candidates.map((c) => `• ${c.name} (${STATUS_LABEL[c.status] || c.status})`).join('\n');
-		throw new Error(`대회가 여러 개 있습니다. 이름을 더 정확히 입력해주세요:\n${list}`);
+		const more = truncated ? '\n… 외 더 있음' : '';
+		throw new Error(`대회가 여러 개 있습니다. 이름을 더 정확히 입력해주세요:\n${list}${more}`);
 	}
 	throw new Error(
 		competitionName ? `대회를 찾을 수 없습니다: ${competitionName}` : '등록된 대회가 없습니다.',
@@ -153,9 +155,9 @@ const get_competition_stats_embed = async (msg, args) => {
 		return `${competition.name}에 등록된 경기가 없습니다.`;
 	}
 
-	// 대회는 판수가 적다 — 최다 판수의 절반 이상만 승률 랭킹에 올려 1판 100%가 1위 되는 걸 막는다
+	// 대회는 판수가 적다 — 1판 100%가 1위 되는 건 막되, 한 명만 판수가 많아도 3판 이상이면 랭킹에 들게 한다
 	const maxCount = Math.max(...users.map((u) => u.totalCount));
-	const minGames = Math.max(1, Math.ceil(maxCount / 2));
+	const minGames = Math.max(1, Math.min(Math.ceil(maxCount / 2), RANKING_MIN_GAMES_CAP));
 
 	const byWinRate = users
 		.filter((u) => u.totalCount >= minGames)
@@ -236,7 +238,15 @@ const close_competition = async (msg) => {
 	if (!match || match.status !== 'OPEN') {
 		throw new Error('진행 중인 대회가 없습니다.');
 	}
-	return competitionClient.patch_close(guildId, match.id, msg.author.id);
+	try {
+		return await competitionClient.patch_close(guildId, match.id, msg.author.id);
+	} catch (error) {
+		// 조회와 종료 사이에 다른 사람이 먼저 종료한 경우
+		if (error instanceof BotError && error.status === 404) {
+			throw new Error(`이미 종료된 대회입니다: ${match.name}`);
+		}
+		throw error;
+	}
 };
 
 /** 삭제는 정확한 이름만. 활성 경기가 있으면 백엔드가 409로 막는다. */
