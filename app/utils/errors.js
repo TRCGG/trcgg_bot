@@ -37,10 +37,14 @@ const UNSUPPORTED_REPLAY_VERSION_TYPE = 'unsupported-replay-version';
 // 스크림/본경기 리플인데 붙일 OPEN 대회가 없음 (TRC-283). 중복 리플과 같은 400이라 type으로만 구분된다.
 const NO_OPEN_COMPETITION_TYPE = 'no-open-competition';
 
+// 백엔드 notFoundHandler — 라우트 자체가 없을 때. 본문에 요청 URL이 들어 있어 사용자에게 보이면 안 된다.
+const ROUTE_NOT_FOUND_TYPE = 'https://example.com/problems/not-found';
+
 module.exports = {
   BotError,
   BotErrorType,
   DISCORD_UPSTREAM_TYPES,
   UNSUPPORTED_REPLAY_VERSION_TYPE,
   NO_OPEN_COMPETITION_TYPE,
+  ROUTE_NOT_FOUND_TYPE,
 };

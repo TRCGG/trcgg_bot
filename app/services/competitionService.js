@@ -20,14 +20,17 @@ const RANKING_MIN_GAMES_CAP = 3;
 
 /**
  * `!전적대회 닉네임 / 대회명` — 닉네임과 대회명 둘 다 공백을 가질 수 있어 `/`로 가른다.
+ * `링뽀/테스트2`처럼 붙여 써도 되게 토큰이 아니라 문자열에서 첫 `/`를 찾는다 (라이엇 닉네임엔 `/`가 없다).
  * `/`가 없으면 전부 닉네임이고 대회는 OPEN(없으면 최근 종료)이다.
  */
 const parseRecordArgs = (args) => {
-  const separator = args.indexOf('/');
+  const joined = args.join(' ');
+  const separator = joined.indexOf('/');
   if (separator === -1) return { nickArgs: args, competitionName: '' };
+  const nickArgs = joined.slice(0, separator).trim().split(/\s+/).filter(Boolean);
   return {
-    nickArgs: args.slice(0, separator),
-    competitionName: normalizeName(args.slice(separator + 1)),
+    nickArgs,
+    competitionName: normalizeName([joined.slice(separator + 1)]),
   };
 };
 
@@ -282,9 +285,15 @@ const get_list_embed = async (msg) => {
 		return '등록된 대회가 없습니다. `!대회개설 [이름]`으로 시작하세요.';
 	}
 
+	// <t:unix:d>는 보는 사람의 시간대로 렌더된다
+	const dateTag = (iso) => (iso ? `<t:${Math.floor(new Date(iso).getTime() / 1000)}:d>` : '?');
 	const lines = competitions.map((c) => {
 		const status = c.status === 'OPEN' ? '🟢 진행중' : `⚪ ${STATUS_LABEL[c.status] || c.status}`;
-		return `${status} **${c.name}** — 스크림 ${c.scrimCount} · ★본경기 ${c.mainCount}`;
+		const period =
+			c.status === 'OPEN'
+				? `개설 ${dateTag(c.createDate)}`
+				: `${dateTag(c.createDate)} ~ ${dateTag(c.closeDate)}`;
+		return `${status} **${c.name}** — 스크림 ${c.scrimCount} · ★본경기 ${c.mainCount} · ${period}`;
 	});
 
 	return stringUtils.createEmbed({

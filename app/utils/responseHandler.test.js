@@ -48,6 +48,24 @@ test('5xx는 백엔드 메시지를 감추고 4xx는 노출한다', async () => 
   assert.deepEqual(sent, ['⚠️ 오류가 발생했습니다.', '⚠️ 이미 등록된 리플입니다']);
 });
 
+// 라우트 404 본문엔 요청 URL이 들어 있어 사용자에게 보이면 안 된다 (닉네임에 `/`가 섞여 경로가 깨진 경우).
+test('라우트 not-found 404는 내부 오류처럼 감춘다', async () => {
+  sent.length = 0;
+  await capture(() =>
+    res.error({}, new BotError('The requested resource /api/matches/x/y was not found', 404, {
+      type: 'https://example.com/problems/not-found',
+    })),
+  );
+  assert.deepEqual(sent, ['⚠️ 오류가 발생했습니다.']);
+});
+
+// 멤버 없음 같은 정상 404는 그대로 안내한다.
+test('type 없는 404는 메시지를 노출한다', async () => {
+  sent.length = 0;
+  await capture(() => res.error({}, new BotError('guild member not found', 404)));
+  assert.deepEqual(sent, ['⚠️ guild member not found']);
+});
+
 // status 0(타임아웃·연결 실패)은 5xx 숨김 분기를 타면 안 된다.
 test('status 0은 메시지를 그대로 노출한다', async () => {
   sent.length = 0;

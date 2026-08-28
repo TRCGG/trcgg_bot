@@ -11,6 +11,17 @@ test('`/` 앞은 닉네임, 뒤는 대회명', () => {
   });
 });
 
+test('`/` 앞뒤에 공백이 없어도 가른다 — `링뽀/테스트2`', () => {
+  assert.deepEqual(parseRecordArgs(['링뽀/테스트2']), {
+    nickArgs: ['링뽀'],
+    competitionName: '테스트2',
+  });
+  assert.deepEqual(parseRecordArgs(['hide', 'on', 'bush/멸망전', '1회']), {
+    nickArgs: ['hide', 'on', 'bush'],
+    competitionName: '멸망전 1회',
+  });
+});
+
 test('`/`가 없으면 전부 닉네임이고 대회명은 비어 있다 (OPEN → 최근 대회)', () => {
   assert.deepEqual(parseRecordArgs(['hide', 'on', 'bush']), {
     nickArgs: ['hide', 'on', 'bush'],
