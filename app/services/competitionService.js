@@ -168,6 +168,13 @@ const get_competition_stats_embed = async (msg, args) => {
 	const byCount = [...users]
 		.sort((a, b) => b.totalCount - a.totalCount || parseFloat(b.winRate) - parseFloat(a.winRate))
 		.slice(0, 10);
+	const byDpm = [...users]
+		.filter((u) => u.totalCount >= minGames)
+		.sort((a, b) => Number(b.avgDpm) - Number(a.avgDpm) || b.totalCount - a.totalCount)
+		.slice(0, 10);
+	const byKills = [...users]
+		.sort((a, b) => Number(b.kills) - Number(a.kills) || b.totalCount - a.totalCount)
+		.slice(0, 10);
 	const topChampions = (Array.isArray(champions) ? champions : [])
 		.sort((a, b) => b.totalCount - a.totalCount || parseFloat(b.winRate) - parseFloat(a.winRate))
 		.slice(0, 5);
@@ -183,6 +190,16 @@ const get_competition_stats_embed = async (msg, args) => {
 		fields: [
 			{ name: `승률 Top 10 (${minGames}판 이상)`, value: rankLines(byWinRate, userLine), inline: false },
 			{ name: `KDA Top 10 (${minGames}판 이상)`, value: rankLines(byKda, userLine), inline: false },
+			{
+				name: `DPM Top 10 (${minGames}판 이상)`,
+				value: rankLines(byDpm, (u) => `${u.riotName} (${formatNumber(u.avgDpm)} / ${u.totalCount}판)`),
+				inline: false,
+			},
+			{
+				name: '최다 킬 Top 10',
+				value: rankLines(byKills, (u) => `${u.riotName} (${formatNumber(u.kills)}킬 / ${u.totalCount}판)`),
+				inline: false,
+			},
 			{ name: '최다 판수 Top 10', value: rankLines(byCount, userLine), inline: false },
 			{
 				name: '많이 나온 챔피언 Top 5',

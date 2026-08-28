@@ -229,8 +229,13 @@ const get_result_record_embed = async(msg, args) => {
   const blueValue = makeTeamListValue(blueTeamData);
   const redValue = makeTeamListValue(redTeamData);
 
+  // 유형·대회명은 경기 단위 값이라 첫 행에서 읽는다 (1=일반내전/2=스크림/3=본경기)
+  const { gameType, competitionName } = game_data[0];
+  const typeLabel = gameType === '3' ? '★본경기' : gameType === '2' ? '스크림' : '';
+  const scopeLabel = [typeLabel, competitionName].filter(Boolean).join(' · ');
+
   const embedData = {
-    title: "결과 상세",
+    title: scopeLabel ? `결과 상세 — ${scopeLabel}` : "결과 상세",
     description: `경기 일시: <t:${Math.floor(new Date(game_data[0].createDate).getTime() / 1000)}:f>`, // 날짜 표시
     color: 0x0099ff,
     fields: [
