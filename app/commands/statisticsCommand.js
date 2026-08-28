@@ -1,4 +1,5 @@
 const statsService = require("../services/statisticsService");
+const competitionService = require("../services/competitionService");
 const stringUtils = require("../utils/stringUtils");
 const res = require("../utils/responseHandler");
 const { safeReply, canSend } = require("../utils/discordUtils");
@@ -7,6 +8,17 @@ const { safeReply, canSend } = require("../utils/discordUtils");
  * 통계 검색 명령어
  */
 module.exports = [
+  {
+    name: "통계대회",
+    run: async (client, msg, args) => {
+      try {
+        const result = await competitionService.get_competition_stats_embed(msg, args);
+        await safeReply(msg, result);
+      } catch (error) {
+        res.error(msg, error);
+      }
+    },
+  },
   {
     name: "장인",
     run: async (client, msg, args) => {
