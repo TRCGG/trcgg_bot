@@ -197,6 +197,16 @@ const httpClient = {
   },
 
   /**
+   * @description PATCH Request
+   * @param {string} url - Request URL
+   * @param {string} data - Request Body
+   * @param {Object} options - fetch Setting
+   */
+  async patch(url, data, options = {}) {
+    return this.request('PATCH', url, {...options, body: JSON.stringify(data)})
+  },
+
+  /**
    * @description DELETE Request
    * @param {string} url - Request URL
    * @param {Object} options - fetch Setting
