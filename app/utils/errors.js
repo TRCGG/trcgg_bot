@@ -34,4 +34,13 @@ const DISCORD_UPSTREAM_TYPES = new Set(['discord-download-timeout', 'discord-dow
 // 구형 리플(~패치 14.10) 미지원 거절 (백엔드 ProblemDetails.type)
 const UNSUPPORTED_REPLAY_VERSION_TYPE = 'unsupported-replay-version';
 
-module.exports = { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES, UNSUPPORTED_REPLAY_VERSION_TYPE };
+// 스크림/본경기 리플인데 붙일 OPEN 대회가 없음 (TRC-283). 중복 리플과 같은 400이라 type으로만 구분된다.
+const NO_OPEN_COMPETITION_TYPE = 'no-open-competition';
+
+module.exports = {
+  BotError,
+  BotErrorType,
+  DISCORD_UPSTREAM_TYPES,
+  UNSUPPORTED_REPLAY_VERSION_TYPE,
+  NO_OPEN_COMPETITION_TYPE,
+};

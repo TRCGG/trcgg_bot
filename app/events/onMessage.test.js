@@ -19,12 +19,13 @@ require.cache[replayServicePath] = {
 
 const onMessage = require('./onMessage');
 
-const makeUpload = (perms) => {
+const makeUpload = (perms, content = '') => {
   const calls = { reply: 0, send: 0 };
   return {
     calls,
     msg: {
       inGuild: () => true,
+      content,
       author: { bot: false, username: 'tester' },
       member: { nickname: '테스터' },
       guild: { id: 'G_TEST', name: '테스트길드' },
@@ -73,6 +74,46 @@ test('권한이 있으면 저장 후 등록완료를 답장한다', async () => 
   assert.equal(calls.reply, 1);
 });
 
+// 첨부 메시지의 첫 토큰이 정확히 !스크림/!대회일 때만 유형이 바뀐다 (TRC-283).
+const uploadTagged = async (content) => {
+  saveCalls.length = 0;
+  const replies = [];
+  const { msg } = makeUpload(
+    [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
+    content,
+  );
+  msg.reply = async (text) => { replies.push(text); };
+  await onMessage.execute({}, msg);
+  return { gameType: saveCalls[0]?.[4], reply: replies[0] };
+};
+
+test('!스크림 / !대회 첨부는 해당 유형으로 저장하고 응답에 유형을 표시한다', async () => {
+  const originalSave = require.cache[replayServicePath].exports.save;
+  require.cache[replayServicePath].exports.save = async (...args) => {
+    saveCalls.push(args);
+    return { replayCode: 'RPY-1', competitionName: '멸망전 1회' };
+  };
+  try {
+    const scrim = await uploadTagged('!스크림');
+    assert.equal(scrim.gameType, '2');
+    assert.match(scrim.reply, /등록완료\(스크림 · 멸망전 1회\)/);
+
+    const main = await uploadTagged('!대회 오늘 결승');
+    assert.equal(main.gameType, '3');
+    assert.match(main.reply, /등록완료\(본경기 · 멸망전 1회\)/);
+  } finally {
+    require.cache[replayServicePath].exports.save = originalSave;
+  }
+});
+
+test('명령이 없거나 다른 명령이면 일반내전으로 저장한다', async () => {
+  assert.equal((await uploadTagged('')).gameType, '1');
+  assert.equal((await uploadTagged('오늘 내전 리플')).gameType, '1');
+  // startsWith 판정이면 !대회개설이 본경기로 오태깅된다
+  assert.equal((await uploadTagged('!대회개설 멸망전 2회')).gameType, '1');
+  assert.doesNotMatch((await uploadTagged('')).reply, /등록완료\(/);
+});
+
 // 원인이 다르면 사용자가 할 일도 다르다 — 재시도, 파일 축소, 관리자 호출로 갈린다.
 const { BotError } = require('../utils/errors');
 
@@ -107,6 +148,11 @@ test('리플 실패 원인별로 다른 안내를 보낸다', async () => {
   assert.match(
     await say(new BotError('구형', 400, { type: 'unsupported-replay-version' })),
     /구형 리플 파일/,
+  );
+  // 같은 400이지만 중복이 아니다 — type으로 갈라야 "이미 등록됨"으로 잘못 안내하지 않는다
+  assert.match(
+    await say(new BotError('no open', 400, { type: 'no-open-competition' })),
+    /진행 중인 대회가 없습니다/,
   );
   assert.match(await say(new BotError('too large', 413)), /파일이 너무 큽니다/);
   assert.match(

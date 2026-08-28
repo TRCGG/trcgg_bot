@@ -1,7 +1,30 @@
 const { Events } = require("discord.js");
 const replayService = require("../services/replayService");
-const { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES, UNSUPPORTED_REPLAY_VERSION_TYPE } = require("../utils/errors");
+const {
+  BotError,
+  BotErrorType,
+  DISCORD_UPSTREAM_TYPES,
+  UNSUPPORTED_REPLAY_VERSION_TYPE,
+  NO_OPEN_COMPETITION_TYPE,
+} = require("../utils/errors");
 const { safeReply } = require("../utils/discordUtils");
+
+// 리플 첨부 메시지의 첫 토큰이 정확히 이 명령일 때만 유형을 바꾼다 (1=일반내전/2=스크림/3=본경기).
+// startsWith로 하면 `!대회개설 이름` + 첨부가 본경기로 오태깅된다.
+const REPLAY_TAG_COMMANDS = { '!스크림': '2', '!대회': '3' };
+const GAME_TYPE_LABEL = { '2': '스크림', '3': '본경기' };
+
+const resolveReplayGameType = (content) => {
+  const firstToken = (content || '').trim().split(/\s+/)[0];
+  return REPLAY_TAG_COMMANDS[firstToken] || '1';
+};
+
+const describeSavedReplay = (replayCode, gameType, competitionName) => {
+  if (gameType === '1') return `:green_circle: 등록완료: ${replayCode}`;
+  const label = GAME_TYPE_LABEL[gameType];
+  const scope = competitionName ? `${label} · ${competitionName}` : label;
+  return `:green_circle: 등록완료(${scope}): ${replayCode}`;
+};
 
 // 백엔드 응답 계약은 TRC-261.
 const describeReplayFailure = (error, fileName) => {
@@ -21,6 +44,9 @@ const describeReplayFailure = (error, fileName) => {
   }
   if (error.type === UNSUPPORTED_REPLAY_VERSION_TYPE) {
     return `:warning: 구형 리플 파일(패치 14.11 이전)이라 등록할 수 없습니다: ${fileName}`;
+  }
+  if (error.type === NO_OPEN_COMPETITION_TYPE) {
+    return `:warning: 진행 중인 대회가 없습니다. \`!대회개설 [이름]\` 후 다시 올려주세요: ${fileName}`;
   }
 
   switch (error.status) {
@@ -50,6 +76,9 @@ module.exports = {
       // 앞 파일의 업로드(수십 초)를 기다리는 사이 캐시 스윕이 걸려 null이 될 수 있으므로
       // 루프에 들어가기 전에 한 번만 읽는다.
       const createUser = msg.member?.nickname || msg.author.username;
+      // 대회는 백엔드가 OPEN 대회로 해석한다. 여기서 먼저 조회하면 첨부 여러 개를 저장하는
+      // 사이에 !대회종료가 끼어들어 뒤 파일이 닫힌 대회에 붙을 수 있다.
+      const gameType = resolveReplayGameType(msg.content);
 
       for (const [id, attachment] of msg.attachments) {
         const fileName = attachment.name;
@@ -60,7 +89,6 @@ module.exports = {
         const guildId = msg.guild.id;
         const guildName = msg.guild.name;
         const fileNameWithoutExt = fileName.slice(0, -5);
-        const gameType = '1'; // 1=일반내전/2=스크림/3=대회 — 리플 첨부는 항상 일반내전
 
         try {
           const result = await replayService.save(
@@ -77,7 +105,7 @@ module.exports = {
             replayCode = result.replayCode;
           }
 
-          await safeReply(msg, `:green_circle: 등록완료: ${replayCode}`);
+          await safeReply(msg, describeSavedReplay(replayCode, gameType, result.competitionName));
         } catch (error) {
           const isExpected400 = error instanceof BotError && error.status === 400;
           if (!isExpected400) {
@@ -112,9 +140,3 @@ module.exports = {
     }
   },
 };
-
-// TO-DO 대회일경우 끝에 _champs.rofl 붙이기.
-// const championShipCheck = (fileName) => {
-//   const regex = new RegExp(/^[a-zA-Z0-9]*_\d{4}_\d{4}_champs\.rofl$/);
-//   return regex.test(fileName);
-// };
