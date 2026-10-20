@@ -12,22 +12,19 @@ const MEMBER_MAY_BE_MISSING = { expectedStatuses: [404] };
  * @description !전적 조회에 필요한 모든 데이터 조회
  */
 const get_all_record = async(riotName, riotNameTag, guildId) => {
-  let url = `${prefix}/${guildId}/${riotName}/dashboard`;
-  if(riotNameTag){
-    url = `${url}?riotNameTag=${riotNameTag}`;
-  }
-  return httpClient.get(url, {}, { ...MEMBER_MAY_BE_MISSING, guildId });
+  // 경로 세그먼트에 `/`·`?`가 섞이면 다른 라우트로 흘러 404 본문이 그대로 노출된다
+  const url = `${prefix}/${guildId}/${encodeURIComponent(riotName)}/dashboard`;
+  const query = riotNameTag ? { riotNameTag } : {};
+  return httpClient.get(url, query, { ...MEMBER_MAY_BE_MISSING, guildId });
 }
 
 /**
  * @description !최근 게임 조회
  */ 
 const get_recent_record = async(riotName, riotNameTag, guildId) => {
-  let url = `${prefix}/${guildId}/${riotName}/games`;
-  if(riotNameTag){
-    url = `${url}?riotNameTag=${riotNameTag}`;
-  }
-  return httpClient.get(url, {}, { ...MEMBER_MAY_BE_MISSING, guildId });
+  const url = `${prefix}/${guildId}/${encodeURIComponent(riotName)}/games`;
+  const query = riotNameTag ? { riotNameTag } : {};
+  return httpClient.get(url, query, { ...MEMBER_MAY_BE_MISSING, guildId });
 }
 
 /**
