@@ -36,9 +36,12 @@ const client = new Client({
   
 client.commands = new Collection();
 
+// 테스트 파일을 불러오면 node:test가 봇 프로세스 안에서 돌고, 명령 배열이 아니라서 로드가 깨진다.
+const isModuleFile = (file) => file.endsWith('.js') && !file.endsWith('.test.js');
+
 // command 로드
 const foldersPath = path.join(__dirname, 'app', 'commands');
-const commandFiles = fs.readdirSync(foldersPath).filter(file => file.endsWith('.js'));
+const commandFiles = fs.readdirSync(foldersPath).filter(isModuleFile);
 
 for (const file of commandFiles) {
     const filePath = path.join(foldersPath, file);
@@ -51,7 +54,7 @@ console.log(client.commands.map(c => c.name).join(', ') + ' 명령어가 로드�
 
 // event 로드
 const eventsPath = path.join(__dirname, 'app', 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+const eventFiles = fs.readdirSync(eventsPath).filter(isModuleFile);
 
 for (const file of eventFiles) {
 	const filePath = path.join(eventsPath, file);
