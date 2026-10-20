@@ -1,5 +1,6 @@
 const { Events } = require("discord.js");
 const { handleSelectMenuInteraction } = require("../utils/selectBoxUtils");
+const { handleRecruitInteraction } = require("../services/recruitService");
 
 /**
  * interactionCreate 이벤트 핸들러
@@ -10,5 +11,6 @@ module.exports = {
 	once: false,
 	async execute(_client, interaction) {
 		if (await handleSelectMenuInteraction(interaction)) return;
+		if (await handleRecruitInteraction(interaction)) return;
 	},
 };
