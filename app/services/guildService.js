@@ -3,6 +3,8 @@ const stringUtils = require('../utils/stringUtils');
 const { AttachmentBuilder } = require('discord.js');
 const { createObjectCsvStringifier } = require('csv-writer');
 const { safeReply, safeSend } = require('../utils/discordUtils');
+
+const EMBED_DESCRIPTION_LIMIT = 4096;
 /**
  * 길드 관련 api call service
  */
@@ -62,7 +64,9 @@ const get_guilds_list = async (client) => {
 
   return stringUtils.createEmbed({
     title: `DB 길드 목록 (총 ${guilds.length}개)`,
-    description: description,
+    description: description.length > EMBED_DESCRIPTION_LIMIT
+      ? '목록이 길어 개수만 표시합니다.'
+      : description,
     color: 0x00ff00,
     footer: renamed.size ? { text: `이름 갱신 ${renamed.size}건` } : null,
   });

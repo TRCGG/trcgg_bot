@@ -91,3 +91,19 @@ test('PUT이 200이어도 반환된 이름이 그대로면 갱신으로 세지 �
   assert.match(embed.description, /^옛이름 /);
   assert.strictEqual(embed.footer, null);
 });
+
+test('길드목록은 100개까지 요청하고, 본문이 4096자를 넘으면 개수만 보여준다', async () => {
+  const requested = [];
+  const many = Array.from({ length: 100 }, (_, i) => dbGuild(String(1e17 + i), `길드${'가'.repeat(30)}${i}`));
+  global.fetch = async (url) => {
+    requested.push(String(url));
+    return new Response(JSON.stringify({ data: many }), { status: 200 });
+  };
+
+  const result = await guildService.get_guilds_list(makeClient([]));
+
+  assert.deepStrictEqual(requested, ['http://test.local/api/guilds?limit=100']);
+  const embed = result.embeds[0];
+  assert.strictEqual(embed.title, 'DB 길드 목록 (총 100개)');
+  assert.strictEqual(embed.description, '목록이 길어 개수만 표시합니다.');
+});
