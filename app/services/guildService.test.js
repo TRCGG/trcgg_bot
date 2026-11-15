@@ -107,3 +107,27 @@ test('길드목록은 100개까지 요청하고, 본문이 4096자를 넘으면 
   assert.strictEqual(embed.title, 'DB 길드 목록 (총 100개)');
   assert.strictEqual(embed.description, '목록이 길어 개수만 표시합니다.');
 });
+
+test('디스코드길드목록은 캐시에서 이름을 읽고 API를 호출하지 않는다', async () => {
+  const client = makeClient([{ id: '1', name: '가' }, { id: '2', name: '나' }]);
+  client.guilds.fetch = () => { throw new Error('fetch를 부르면 안 된다'); };
+
+  const result = await guildService.show_guild_list(client);
+
+  assert.strictEqual(result, '**가** - 1\n**나** - 2');
+});
+
+test('디스코드길드목록은 2000자까지 목록을 보여주고, 넘으면 개수만 보여준다', async () => {
+  // 한 줄은 `**이름** - 1`이라 이름 길이 + 8자다.
+  const exact = await guildService.show_guild_list(makeClient([{ id: '1', name: '가'.repeat(1992) }]));
+  assert.strictEqual(exact.length, 2000);
+
+  const over = await guildService.show_guild_list(makeClient([{ id: '1', name: '가'.repeat(1993) }]));
+  assert.strictEqual(over, '봇이 들어가 있는 길드: 총 1개 (목록이 길어 개수만 표시합니다.)');
+});
+
+test('이용 불가 길드는 이름 대신 표시를 남긴다', async () => {
+  const result = await guildService.show_guild_list(makeClient([{ id: '1', name: undefined }]));
+
+  assert.strictEqual(result, '**(이용 불가)** - 1');
+});
