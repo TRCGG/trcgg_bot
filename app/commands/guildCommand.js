@@ -15,7 +15,7 @@ module.exports = [
     run: async (client, msg, args) => {
       if (msg.author.id !== ADMIN_ID) return res.noAuth(msg);
       try {
-        const result = await guildService.get_guilds_list();
+        const result = await guildService.get_guilds_list(client);
         await safeReply(msg, result);
       } catch (error) {
         res.error(msg, error);

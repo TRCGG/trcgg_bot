@@ -3,6 +3,8 @@ const stringUtils = require('../utils/stringUtils');
 const { AttachmentBuilder } = require('discord.js');
 const { createObjectCsvStringifier } = require('csv-writer');
 const { safeReply, safeSend } = require('../utils/discordUtils');
+
+const EMBED_DESCRIPTION_LIMIT = 4096;
 /**
  * 길드 관련 api call service
  */
@@ -49,19 +51,51 @@ const show_guild_list = async (client) => {
  */
 const get_guilds_list = async (client) => {
 	const guilds = await guildClient.get_guilds();
+	const renamed = await sync_guild_names(client, guilds);
+
 	const description = guilds.map((guild) => {
     const date = new Date(guild.createDate).toISOString().split('T')[0];
     const status = guild.isDeleted ? "❌" : "✅";
-    
-    return `${guild.name} (\`${guild.id}\`)\n${date} ${status}`;
+    const oldName = renamed.get(guild.id);
+    const nameLine = oldName ? `${guild.name} 🔄 (이전: ${oldName})` : guild.name;
+
+    return `${nameLine} (\`${guild.id}\`)\n${date} ${status}`;
   }).join('\n\n'); // 항목 간 줄바꿈
 
   return stringUtils.createEmbed({
     title: `DB 길드 목록 (총 ${guilds.length}개)`,
-    description: description,
+    description: description.length > EMBED_DESCRIPTION_LIMIT
+      ? '목록이 길어 개수만 표시합니다.'
+      : description,
     color: 0x00ff00,
+    footer: renamed.size ? { text: `이름 갱신 ${renamed.size}건` } : null,
   });
 }
+
+// guilds의 name을 제자리에서 바꾼다.
+const sync_guild_names = async (client, guilds) => {
+	const renamed = new Map();
+	// 봇이 나간 길드는 캐시에 없어 비교 대상이 아니다. 캐시는 GUILD_UPDATE로 최신 이름을 유지한다.
+	const targets = guilds.filter((guild) => {
+		const current = client.guilds.cache.get(guild.id)?.name;
+		return current && current !== guild.name;
+	});
+
+	await Promise.all(targets.map(async (guild) => {
+		const current = client.guilds.cache.get(guild.id).name;
+		try {
+			const updated = await guildClient.update_guild_name(guild.id, current);
+			// 백엔드가 guildName을 무시하고도 200을 주던 적이 있다. 반환된 행으로 실제 반영을 확인한다.
+			if (updated?.name !== current) return;
+			renamed.set(guild.id, guild.name);
+			guild.name = current;
+		} catch {
+			// 실패 로그는 networkUtils가 남긴다. 목록은 DB 이름 그대로 보여준다.
+		}
+	}));
+
+	return renamed;
+};
 
 /**
  * @description 디스코드 길드 떠나기
@@ -73,6 +107,10 @@ const leave_discord_guild = async (client, msg, args) => {
 		return;
 	}
 	const guild = client.guilds.cache.get(guild_id);
+	if (!guild) {
+		await safeReply(msg, `봇이 들어가 있지 않은 길드입니다: \`${guild_id}\`\n\`!디스코드길드목록\`에서 ID를 확인하세요.`);
+		return;
+	}
   try {
 		await guild.leave();
 		await safeReply(msg, `길드 ${guild.name}에서 떠났습니다.`);
