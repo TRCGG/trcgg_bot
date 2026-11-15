@@ -10,7 +10,8 @@ const prefix = "/guilds";
  */
 const get_guilds = async () => {
   const url = `${prefix}`;
-  return httpClient.get(url);
+  // 백엔드 기본 limit은 10, 최대 100이다.
+  return httpClient.get(url, { limit: 100 });
 }
 
 /**
