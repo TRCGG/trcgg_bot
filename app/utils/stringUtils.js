@@ -208,8 +208,20 @@ const encodeGuildId = (guild_id) => {
   return encodedId;
 }
 
+// 봇 요청은 백엔드 권한 검사를 건너뛰므로, 입력이 경로를 벗어나면 다른 길드·다른 API를 봇 권한으로 호출하게 된다.
+// fetch는 `..`·`%2e%2e` 칸을 상위 경로로 해석하고, encodeURIComponent는 점을 인코딩하지 않는다.
+const toPathSegment = (value) => {
+  const text = String(value ?? '');
+  // 짝 없는 서로게이트는 encodeURIComponent가 URIError(영문 메시지)를 던진다.
+  if (text === '' || text === '.' || text === '..' || !text.isWellFormed()) {
+    throw new Error(`사용할 수 없는 입력입니다: ${text || '(빈 값)'}`);
+  }
+  return encodeURIComponent(text);
+};
+
 module.exports = {
   createEmbed,
+  toPathSegment,
   createLinkButtonRow,
   getMemberNick,
   checkAuth,
