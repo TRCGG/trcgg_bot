@@ -97,7 +97,6 @@ module.exports = {
     }
 
     if (!msg.content.startsWith(prefix)) return;
-    if (msg.content.slice(0, prefix.length) !== prefix) return;
 
     const args = msg.content.slice(prefix.length).trim().split(/ +/g);
     const command = args.shift().toLowerCase();
@@ -112,9 +111,3 @@ module.exports = {
     }
   },
 };
-
-// TO-DO 대회일경우 끝에 _champs.rofl 붙이기.
-// const championShipCheck = (fileName) => {
-//   const regex = new RegExp(/^[a-zA-Z0-9]*_\d{4}_\d{4}_champs\.rofl$/);
-//   return regex.test(fileName);
-// };
