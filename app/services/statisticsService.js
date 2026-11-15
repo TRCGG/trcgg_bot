@@ -96,56 +96,50 @@ const send_stats_file = async (msg, seasonArg, month, guildId) => {
     return;
   }
 
-  try {
-    const sortedUserData = [...userData].sort(
-      (a, b) =>
-        b.totalCount - a.totalCount ||
-        parseFloat(b.winRate) - parseFloat(a.winRate)
-    );
+  const sortedUserData = [...userData].sort(
+    (a, b) =>
+      b.totalCount - a.totalCount ||
+      parseFloat(b.winRate) - parseFloat(a.winRate)
+  );
 
-    const csvStringifier = createObjectCsvStringifier({
-      header: [
-        { id: "nickname", title: "닉네임" },
-        { id: "totalCount", title: "총 게임 수" },
-        { id: "win", title: "승" },
-        { id: "lose", title: "패" },
-        { id: "winRate", title: "승률 (%)" },
-      ],
-    });
+  const csvStringifier = createObjectCsvStringifier({
+    header: [
+      { id: "nickname", title: "닉네임" },
+      { id: "totalCount", title: "총 게임 수" },
+      { id: "win", title: "승" },
+      { id: "lose", title: "패" },
+      { id: "winRate", title: "승률 (%)" },
+    ],
+  });
 
-    const records = sortedUserData.map((user) => ({
-      nickname: `${user.riotName}#${user.riotNameTag}`,
-      totalCount: user.totalCount,
-      win: user.win,
-      lose: user.lose,
-      winRate: `${user.winRate}%`,
-    }));
+  const records = sortedUserData.map((user) => ({
+    nickname: `${user.riotName}#${user.riotNameTag}`,
+    totalCount: user.totalCount,
+    win: user.win,
+    lose: user.lose,
+    winRate: `${user.winRate}%`,
+  }));
 
-    // BOM이 없으면 엑셀에서 열 때 한글이 깨진다.
-    const csvContent =
-      '\uFEFF' + csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(records);
+  // BOM이 없으면 엑셀에서 열 때 한글이 깨진다.
+  const csvContent =
+    '\uFEFF' + csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(records);
 
-    let fileName = `${targetSeason}시즌_전적통계.csv`;
-    if (month) {
-      fileName = `${targetSeason}시즌_${month}월_전적통계.csv`;
-    }
+  let fileName = `${targetSeason}시즌_전적통계.csv`;
+  if (month) {
+    fileName = `${targetSeason}시즌_${month}월_전적통계.csv`;
+  }
 
-    const sent = await safeSend(msg.channel, {
-      content: `**${periodLabel} 클랜통계** 데이터를 CSV 파일로 추출했습니다.`,
-      files: [{
-        attachment: Buffer.from(csvContent, "utf8"),
-        name: fileName
-      }]
-    });
+  const sent = await safeSend(msg.channel, {
+    content: `**${periodLabel} 클랜통계** 데이터를 CSV 파일로 추출했습니다.`,
+    files: [{
+      attachment: Buffer.from(csvContent, "utf8"),
+      name: fileName
+    }]
+  });
 
-    // 파일 전송은 AttachFiles까지 필요해 실패할 수 있다. 조용히 사라지지 않게 알린다.
-    if (!sent) {
-      await safeReply(msg, ':warning: 통계 파일을 보내지 못했습니다. 봇의 채널 권한(파일 첨부)을 확인해주세요.');
-    }
-
-  } catch (error) {
-    console.error("클랜통계 CSV 생성 중 오류 발생:", error);
-    throw error;
+  // 파일 전송은 AttachFiles까지 필요해 실패할 수 있다. 조용히 사라지지 않게 알린다.
+  if (!sent) {
+    await safeReply(msg, ':warning: 통계 파일을 보내지 못했습니다. 봇의 채널 권한(파일 첨부)을 확인해주세요.');
   }
 };
 

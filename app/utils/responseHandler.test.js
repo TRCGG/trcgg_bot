@@ -62,21 +62,24 @@ test('라우트 not-found 404는 내부 오류처럼 감춘다', async () => {
 // 멤버 없음 같은 정상 404는 그대로 안내한다.
 test('type 없는 404는 메시지를 노출한다', async () => {
   sent.length = 0;
-  await capture(() => res.error({}, new BotError('guild member not found', 404)));
+  const lines = await capture(() => res.error({}, new BotError('guild member not found', 404)));
   assert.deepEqual(sent, ['⚠️ guild member not found']);
+  assert.equal(lines.length, 0);
 });
 
 // status 0(타임아웃·연결 실패)은 5xx 숨김 분기를 타면 안 된다.
 test('status 0은 메시지를 그대로 노출한다', async () => {
   sent.length = 0;
-  await capture(() => res.error({}, new BotError('서버에 연결할 수 없습니다', 0)));
+  const lines = await capture(() => res.error({}, new BotError('서버에 연결할 수 없습니다', 0)));
   assert.deepEqual(sent, ['⚠️ 서버에 연결할 수 없습니다']);
+  assert.equal(lines.length, 0);
 });
 
-test('BotError가 아닌 오류도 메시지를 노출한다', async () => {
+test('사용자 안내 문구(Error)는 그대로 노출하고 기록하지 않는다', async () => {
   sent.length = 0;
-  await capture(() => res.error({}, new Error('닉네임은 두 글자 이상 입력해주세요')));
+  const lines = await capture(() => res.error({}, new Error('닉네임은 두 글자 이상 입력해주세요')));
   assert.deepEqual(sent, ['⚠️ 닉네임은 두 글자 이상 입력해주세요']);
+  assert.equal(lines.length, 0);
 });
 
 test('success와 noAuth는 정해진 문구를 보낸다', async () => {
@@ -84,4 +87,24 @@ test('success와 noAuth는 정해진 문구를 보낸다', async () => {
   await res.success({}, '부캐 저장 완료');
   await res.noAuth({});
   assert.deepEqual(sent, ['✅ 부캐 저장 완료', '⛔ 권한이 없습니다.']);
+});
+
+test('코드 버그(TypeError 등)는 문구를 감추고 스택과 함께 기록한다', async () => {
+  sent.length = 0;
+  const bug = new TypeError("Cannot read properties of undefined (reading 'leave')");
+  const lines = await capture(() => res.error({}, bug));
+
+  assert.deepEqual(sent, ['⚠️ 오류가 발생했습니다.']);
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0][1], bug);
+});
+
+test('Error가 아닌 값이 던져져도 감추고 기록한다', async () => {
+  for (const thrown of [undefined, null, '문자열']) {
+    sent.length = 0;
+    const lines = await capture(() => res.error({}, thrown));
+
+    assert.deepEqual(sent, ['⚠️ 오류가 발생했습니다.']);
+    assert.equal(lines.length, 1);
+  }
 });

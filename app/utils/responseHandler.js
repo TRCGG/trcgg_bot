@@ -5,6 +5,10 @@ const { safeReply } = require('./discordUtils');
 const isInternal = (error) =>
   error instanceof BotError && (error.status >= 500 || error.type === ROUTE_NOT_FOUND_TYPE);
 
+// 사용자 안내 문구는 전부 `new Error(문구)`로 만든다. 그 밖의 예외(TypeError 등)는 코드 버그라
+// 문구가 사용자에게 의미 없고, BotError와 달리 다른 곳에 기록되지도 않는다.
+const isUserMessage = (error) => error instanceof BotError || error?.constructor === Error;
+
 module.exports = {
   success: (msg, text) => safeReply(msg, `✅ ${text}`),
 
@@ -12,6 +16,10 @@ module.exports = {
   error: (msg, error) => {
     if (isInternal(error)) {
       // BotError는 networkUtils에서만 만들어지므로 이미 기록됐다. 여기서 또 남기면 중복이다.
+      return safeReply(msg, `⚠️ 오류가 발생했습니다.`);
+    }
+    if (!isUserMessage(error)) {
+      console.error('Unexpected command error:', error);
       return safeReply(msg, `⚠️ 오류가 발생했습니다.`);
     }
     return safeReply(msg, `⚠️ ${error.message || "알 수 없는 오류"}`);
