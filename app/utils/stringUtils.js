@@ -208,8 +208,22 @@ const encodeGuildId = (guild_id) => {
   return encodedId;
 }
 
+/**
+ * @description 사용자 입력을 URL 경로 한 칸으로만 쓰이게 만든다.
+ * 봇 요청은 백엔드 권한 검사를 건너뛰므로, 입력이 경로를 벗어나면 다른 길드·다른 API를 봇 권한으로 호출하게 된다.
+ * fetch는 `..`·`%2e%2e` 칸을 상위 경로로 해석하고, encodeURIComponent는 점을 인코딩하지 않는다.
+ */
+const toPathSegment = (value) => {
+  const text = String(value ?? '');
+  if (text === '' || text === '.' || text === '..') {
+    throw new Error(`사용할 수 없는 입력입니다: ${text || '(빈 값)'}`);
+  }
+  return encodeURIComponent(text);
+};
+
 module.exports = {
   createEmbed,
+  toPathSegment,
   createLinkButtonRow,
   getMemberNick,
   checkAuth,

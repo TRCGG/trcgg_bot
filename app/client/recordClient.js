@@ -1,4 +1,5 @@
 const httpClient = require('../utils/networkUtils');
+const { toPathSegment } = require('../utils/stringUtils');
 const prefix = '/matches';
 
 // 닉네임 오타·미등록 멤버 조회는 정상 분기다. 에러 로그로 취급하지 않는다.
@@ -13,7 +14,7 @@ const MEMBER_MAY_BE_MISSING = { expectedStatuses: [404] };
  */
 const get_all_record = async(riotName, riotNameTag, guildId) => {
   // 경로 세그먼트에 `/`·`?`가 섞이면 다른 라우트로 흘러 404 본문이 그대로 노출된다
-  const url = `${prefix}/${guildId}/${encodeURIComponent(riotName)}/dashboard`;
+  const url = `${prefix}/${guildId}/${toPathSegment(riotName)}/dashboard`;
   const query = riotNameTag ? { riotNameTag } : {};
   return httpClient.get(url, query, { ...MEMBER_MAY_BE_MISSING, guildId });
 }
@@ -22,7 +23,7 @@ const get_all_record = async(riotName, riotNameTag, guildId) => {
  * @description !최근 게임 조회
  */ 
 const get_recent_record = async(riotName, riotNameTag, guildId) => {
-  const url = `${prefix}/${guildId}/${encodeURIComponent(riotName)}/games`;
+  const url = `${prefix}/${guildId}/${toPathSegment(riotName)}/games`;
   const query = riotNameTag ? { riotNameTag } : {};
   return httpClient.get(url, query, { ...MEMBER_MAY_BE_MISSING, guildId });
 }
@@ -31,7 +32,7 @@ const get_recent_record = async(riotName, riotNameTag, guildId) => {
  * @description !결과 Embed
  */
 const get_result_record = async(gameId, guild_id) => {
-  const url = `${prefix}/${guild_id}/games/${gameId}`;
+  const url = `${prefix}/${guild_id}/games/${toPathSegment(gameId)}`;
   return httpClient.get(url, {}, { guildId: guild_id });
 }
 
