@@ -98,37 +98,6 @@ const checkAuth = (msg) => {
 };
 
 /**
- * 날짜 분리
- * @param {*} date 
- * @returns 
- */
-const splitDate = (date) => {
-  if (!date) {
-    const now = new Date();
-    const year = now.getFullYear().toString();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    return [year, month];
-  }
-
-  if (typeof date !== 'string') {
-    console.error('유효하지 않은 입력 타입:', typeof date);
-    throw new Error("날짜 형식 오류");
-  }
-
-  const [year, month] = date.split('-');
-
-  if (!year || !month ||
-    isNaN(year) ||
-    isNaN(month) ||
-    month.length !== 2) {
-      console.error('잘못된 날짜 형식:', date);
-      throw new Error("날짜 형식 오류");
-  }
-
-  return [year, month];
-};
-
-/**
  * 슬래쉬 문자열 분리
  * @param {*} str 
  * @returns 
@@ -176,26 +145,6 @@ const splitTag = (str) => {
 };
 
 /**
- * # 태그 검증
- * @param {*} str 
- * @returns 
- */
-const validateTag = (str) => {
-  const pattern = /^[가-힣a-zA-Z0-9]{1,16}#[가-힣a-zA-Z0-9]{1,16}$/;
-
-  if (!str) {
-    throw new Error("태그 문자열이 비어있습니다");
-  }
-
-  if (!pattern.test(str)) {
-    console.log("유효하지 않은 태그:", str);
-    throw new Error("유효하지 않은 태그");
-  }
-
-  return true;
-};
-
-/**
  * @param {String} guild_id
  * @description 길드 ID Base64 인코딩
  */
@@ -225,9 +174,7 @@ module.exports = {
   createLinkButtonRow,
   getMemberNick,
   checkAuth,
-  splitDate,
   splitStr,
   splitTag,
-  validateTag,
   encodeGuildId,
 };

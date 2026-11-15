@@ -49,8 +49,7 @@ trcgg_bot/
 │   └── utils/
 │       ├── networkUtils.js       # HTTP 클라이언트 (fetch 래퍼)
 │       ├── stringUtils.js        # 공통 유틸 (Embed 생성, 닉네임 파싱, 권한 체크 등)
-│       ├── responseHandler.js    # 성공/에러/권한없음 응답 처리
-│       └── commandUtilis.js      # 명령어 공통 유틸
+│       └── responseHandler.js    # 성공/에러/권한없음 응답 처리
 ```
 
 ---
