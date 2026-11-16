@@ -5,45 +5,20 @@ const { createObjectCsvStringifier } = require('csv-writer');
 const { safeReply, safeSend } = require('../utils/discordUtils');
 
 const EMBED_DESCRIPTION_LIMIT = 4096;
+const MESSAGE_CONTENT_LIMIT = 2000;
 /**
  * 길드 관련 api call service
  */
 
-/**
- * @description 내전봇이 디스코드에 등록되어 있는 길드 목록 가져오기
- */
-const get_discord_guild_list_data = async (client) => {
-  const guilds = await client.guilds.fetch();
+// Guilds 인텐트라 봇이 들어가 있는 길드는 전부 캐시에 있다. 다만 재시작 직후나 디스코드 장애로
+// 이용 불가인 길드는 GUILD_CREATE가 오기 전까지 name이 비어 있다.
+const show_guild_list = (client) => {
+	const guilds = [...client.guilds.cache.values()];
+	const list = guilds.map((guild) => `**${guild.name ?? '(이용 불가)'}** - ${guild.id}`).join('\n');
 
-  const guildList = [];
-
-  for (const [id, guildData] of guilds) {
-    const guild = await guildData.fetch();
-    guildList.push({
-      id: guild.id,
-      name: guild.name,
-    });
-  }
-
-  return { guilds: guildList };
-};
-
-/**
- * @description 길드 목록 포맷팅
- */
-const format_guild_list = (guildList) => {
-  return guildList.guilds.map(guild => `**${guild.name}** - ${guild.id}`).join('\n');
-};
-
-/**
- * @param {*} client 
- * @description 내전봇이 있는 디스코드 길드 목록 보여주기
- * @param {*} msg 
- */
-const show_guild_list = async (client) => {
-  const guildList = await get_discord_guild_list_data(client);
-  const formattedList = format_guild_list(guildList);
-	return formattedList;
+	return list.length > MESSAGE_CONTENT_LIMIT
+		? `봇이 들어가 있는 길드: 총 ${guilds.length}개 (목록이 길어 개수만 표시합니다.)`
+		: list;
 };
 
 /**

@@ -57,7 +57,7 @@ const get_all_record_embed = async(msg, args) => {
     } 
   }
 
-  const { member, summary, lines, mostPicks, synergy } = result;
+  const { member, summary, lines, mostPicks } = result;
 
   // 1. 통합 전적 계산 (lines 데이터 합산)
   let allTotal = 0;
@@ -127,25 +127,6 @@ const get_all_record_embed = async(msg, args) => {
     mostPickValue += `${pick.champName}: ${pick.totalCount}판 ${pick.winRate}% (${pick.kda}) ${winEmoji}\n`;
   });
 
-  // 4. 시너지 (같이 게임한 플레이어)
-  // 승률 50% 이상(Blue)과 미만(Red)으로 분류
-  // let goodSynergyValue = "";
-  // let badSynergyValue = "";
-
-  // 시너지 데이터가 있는 경우에만 처리
-  // if (synergy && synergy.length > 0) {
-  //   synergy.forEach((player) => {
-  //     const winRate = parseFloat(player.winRate);
-  //     const row = `${player.riotName}: ${player.win}승 ${player.lose}패 ${player.winRate}%\n`;
-      
-  //     if (winRate >= 50) {
-  //       goodSynergyValue += row;
-  //     } else {
-  //       badSynergyValue += row;
-  //     }
-  //   });
-  // }
-
   // Embed 객체 생성
   const fields = [
     {
@@ -159,23 +140,6 @@ const get_all_record_embed = async(msg, args) => {
       inline: false,
     }
   ];
-
-  // // 시너지 필드 추가 (데이터가 있을 때만)
-  // if (goodSynergyValue) {
-  //   fields.push({
-  //     name: "함께해서 영광 :blue_heart:",
-  //     value: goodSynergyValue,
-  //     inline: true,
-  //   });
-  // }
-  
-  // if (badSynergyValue) {
-  //   fields.push({
-  //     name: "억제기 :broken_heart:",
-  //     value: badSynergyValue,
-  //     inline: true,
-  //   });
-  // }
 
   const frontendUrl = process.env.NODE_ENV === 'development' 
 ? 'https://dev.gmok.kr' 

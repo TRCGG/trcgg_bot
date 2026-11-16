@@ -12,11 +12,11 @@ const cronSchedule = async (client) => {
 };
 
 const sendMessage = async (client) => {
-  // 월~일 오후 5시
+  // timezone이 없으면 서버 시간대 기준으로 발송된다.
   cron.schedule("0 17 * * 0-6", async () => {
     const channel = client.channels.cache.get(TRC_CHANNEL_ID);
     await safeSend(channel, "```19:30 시작합니다. 시작 5분전에 대기해주세요.```");
-  });
+  }, { timezone: "Asia/Seoul" });
 };
 
 module.exports = {

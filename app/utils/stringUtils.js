@@ -98,37 +98,6 @@ const checkAuth = (msg) => {
 };
 
 /**
- * 날짜 분리
- * @param {*} date 
- * @returns 
- */
-const splitDate = (date) => {
-  if (!date) {
-    const now = new Date();
-    const year = now.getFullYear().toString();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    return [year, month];
-  }
-
-  if (typeof date !== 'string') {
-    console.error('유효하지 않은 입력 타입:', typeof date);
-    throw new Error("날짜 형식 오류");
-  }
-
-  const [year, month] = date.split('-');
-
-  if (!year || !month ||
-    isNaN(year) ||
-    isNaN(month) ||
-    month.length !== 2) {
-      console.error('잘못된 날짜 형식:', date);
-      throw new Error("날짜 형식 오류");
-  }
-
-  return [year, month];
-};
-
-/**
  * 슬래쉬 문자열 분리
  * @param {*} str 
  * @returns 
@@ -176,26 +145,6 @@ const splitTag = (str) => {
 };
 
 /**
- * # 태그 검증
- * @param {*} str 
- * @returns 
- */
-const validateTag = (str) => {
-  const pattern = /^[가-힣a-zA-Z0-9]{1,16}#[가-힣a-zA-Z0-9]{1,16}$/;
-
-  if (!str) {
-    throw new Error("태그 문자열이 비어있습니다");
-  }
-
-  if (!pattern.test(str)) {
-    console.log("유효하지 않은 태그:", str);
-    throw new Error("유효하지 않은 태그");
-  }
-
-  return true;
-};
-
-/**
  * @param {String} guild_id
  * @description 길드 ID Base64 인코딩
  */
@@ -208,14 +157,24 @@ const encodeGuildId = (guild_id) => {
   return encodedId;
 }
 
+// 봇 요청은 백엔드 권한 검사를 건너뛰므로, 입력이 경로를 벗어나면 다른 길드·다른 API를 봇 권한으로 호출하게 된다.
+// fetch는 `..`·`%2e%2e` 칸을 상위 경로로 해석하고, encodeURIComponent는 점을 인코딩하지 않는다.
+const toPathSegment = (value) => {
+  const text = String(value ?? '');
+  // 짝 없는 서로게이트는 encodeURIComponent가 URIError(영문 메시지)를 던진다.
+  if (text === '' || text === '.' || text === '..' || !text.isWellFormed()) {
+    throw new Error(`사용할 수 없는 입력입니다: ${text || '(빈 값)'}`);
+  }
+  return encodeURIComponent(text);
+};
+
 module.exports = {
   createEmbed,
+  toPathSegment,
   createLinkButtonRow,
   getMemberNick,
   checkAuth,
-  splitDate,
   splitStr,
   splitTag,
-  validateTag,
   encodeGuildId,
 };

@@ -1,4 +1,5 @@
 const httpClient = require('../utils/networkUtils');
+const { toPathSegment } = require('../utils/stringUtils');
 const prefix = '/replays';
 
 /**
@@ -24,7 +25,7 @@ const post_replay = async(data) => {
  * @param {String} actorMemberId 명령 사용자 Discord id (삭제 감사 로그용)
  */
 const delete_game = async(gameId, guildId, actorMemberId) => {
-	const url = `/matches/${guildId}/games/${gameId}`;
+	const url = `/matches/${guildId}/games/${toPathSegment(gameId)}`;
 	return httpClient.delete(url, { actorMemberId }, { guildId });
 }
 
