@@ -175,8 +175,7 @@ test('초대되면 길드를 등록하고 멘션 없이 알림을 보낸다', as
   await withNotifyChannel(() => guildService.on_guild_join(client, joinedGuild));
 
   assert.deepStrictEqual(requests, ['GET', 'POST']);
-  assert.match(client.sent[0].content, /신규 등록/);
-  assert.match(client.sent[0].content, /- 9 \(42명\)/);
+  assert.match(client.sent[0].content, /^`\d{2}-\d{2} \d{2}:\d{2}` 🟢 \*\*@everyone 클랜\*\* 신규 등록 · 42명 · 9$/);
   assert.deepStrictEqual(client.sent[0].allowedMentions, { parse: [] });
 });
 
@@ -187,7 +186,8 @@ test('이미 등록된 길드는 다시 만들지 않는다', async () => {
   await withNotifyChannel(() => guildService.on_guild_join(client, joinedGuild));
 
   assert.deepStrictEqual(requests, ['GET']);
-  assert.match(client.sent[0].content, /이미 등록된 길드/);
+  // 2026-01-01T00:00Z는 KST로 같은 날 09:00이다.
+  assert.match(client.sent[0].content, /⚪ .* 다시 초대 \(등록 2026-01-01\) · 42명 · 9$/);
 });
 
 test('삭제된 길드에 다시 초대되면 되살리지 않고 알린다', async () => {
@@ -196,7 +196,7 @@ test('삭제된 길드에 다시 초대되면 되살리지 않고 알린다', as
 
   await withNotifyChannel(() => guildService.on_guild_join(client, joinedGuild));
 
-  assert.match(client.sent[0].content, /삭제 처리된 길드/);
+  assert.match(client.sent[0].content, /🟡 .* 삭제된 길드 재초대 · /);
 });
 
 test('등록이 실패해도 알림은 보낸다', async () => {
@@ -205,7 +205,7 @@ test('등록이 실패해도 알림은 보낸다', async () => {
 
   await silence(() => withNotifyChannel(() => guildService.on_guild_join(client, joinedGuild)));
 
-  assert.match(client.sent[0].content, /등록 실패/);
+  assert.match(client.sent[0].content, /❌ .* 등록 실패/);
 });
 
 test('알림 채널이 설정되지 않아도 등록은 하고 알림만 건너뛴다', async () => {
@@ -230,7 +230,7 @@ test('퇴장하면 알림만 보내고 백엔드는 호출하지 않는다', asy
   await withNotifyChannel(() => guildService.on_guild_leave(client, joinedGuild));
 
   assert.deepStrictEqual(requests, []);
-  assert.match(client.sent[0].content, /나감/);
+  assert.match(client.sent[0].content, /🔴 .* 나감 · 42명 · 9$/);
 });
 
 test('알림의 길드 이름은 마크다운을 이스케이프한다', async () => {

@@ -153,7 +153,16 @@ const show_guild_member_list = async (client, msg, args) => {
 
 }
 
-const guild_line = (guild) => `**${guild.name ? escapeMarkdown(guild.name) : '(이용 불가)'}** - ${guild.id} (${guild.memberCount ?? '?'}명)`;
+const KST_FORMAT = new Intl.DateTimeFormat('sv-SE', {
+	timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+	hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+});
+const to_kst = (date) => KST_FORMAT.format(date);
+
+const guild_alert = (guild, { icon, text }) => {
+	const name = guild.name ? escapeMarkdown(guild.name) : '(이용 불가)';
+	return `\`${to_kst(new Date()).slice(5)}\` ${icon} **${name}** ${text} · ${guild.memberCount ?? '?'}명 · ${guild.id}`;
+};
 
 // 길드 이름에 @everyone 같은 문자열이 들어갈 수 있어 멘션을 전부 막는다.
 const notify = async (client, content) => {
@@ -164,31 +173,31 @@ const notify = async (client, content) => {
 
 // httpClient가 상태코드를 버려 POST 응답만으로는 신규/기존을 구분할 수 없다.
 const register_joined_guild = async (guild) => {
-	if (await guildClient.get_guild(guild.id)) return 'existing';
+	const existing = await guildClient.get_guild(guild.id);
+	if (existing) {
+		const registered = existing.createDate ? ` (등록 ${to_kst(new Date(existing.createDate)).slice(0, 10)})` : '';
+		return { icon: '⚪', text: `다시 초대${registered}` };
+	}
 	const saved = await guildClient.create_guild(guild.id, guild.name);
-	return saved?.isDeleted ? 'deleted' : 'created';
-};
-
-const REGISTER_STATUS = {
-	created: '✅ 길드 신규 등록',
-	existing: '☑️ 이미 등록된 길드',
-	deleted: '⚠️ 삭제 처리된 길드라 웹에 보이지 않습니다. 필요하면 관리자가 복구하세요.',
+	return saved?.isDeleted
+		? { icon: '🟡', text: '삭제된 길드 재초대' }
+		: { icon: '🟢', text: '신규 등록' };
 };
 
 const on_guild_join = async (client, guild) => {
 	let status;
 	try {
-		status = REGISTER_STATUS[await register_joined_guild(guild)];
+		status = await register_joined_guild(guild);
 	} catch (error) {
 		// BotError는 networkUtils가 이미 남겼다.
 		if (!(error instanceof BotError)) console.error('[guildCreate] 길드 등록 실패:', error);
-		status = '❌ 길드 등록 실패 — 첫 리플 업로드 때 다시 등록됩니다.';
+		status = { icon: '❌', text: '등록 실패 (첫 리플 업로드 때 재시도)' };
 	}
-	await notify(client, `📥 봇이 서버에 초대됨\n${guild_line(guild)}\n${status}`);
+	await notify(client, guild_alert(guild, status));
 };
 
 const on_guild_leave = async (client, guild) => {
-	await notify(client, `📤 봇이 서버에서 나감\n${guild_line(guild)}`);
+	await notify(client, guild_alert(guild, { icon: '🔴', text: '나감' }));
 };
 
 module.exports = {
