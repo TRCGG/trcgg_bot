@@ -1,8 +1,9 @@
 const guildClient = require('../client/guildClient');
 const stringUtils = require('../utils/stringUtils');
-const { AttachmentBuilder } = require('discord.js');
+const { AttachmentBuilder, escapeMarkdown } = require('discord.js');
 const { createObjectCsvStringifier } = require('csv-writer');
 const { safeReply, safeSend } = require('../utils/discordUtils');
+const { BotError } = require('../utils/errors');
 
 const EMBED_DESCRIPTION_LIMIT = 4096;
 const MESSAGE_CONTENT_LIMIT = 2000;
@@ -152,8 +153,80 @@ const show_guild_member_list = async (client, msg, args) => {
 
 }
 
+const guild_line = (guild) => `**${guild.name ? escapeMarkdown(guild.name) : '(이용 불가)'}** - ${guild.id} (${guild.memberCount ?? '?'}명)`;
+
+// 길드 이름에 @everyone 같은 문자열이 들어갈 수 있어 멘션을 전부 막는다.
+const notify = async (client, content) => {
+	const channelId = process.env.GUILD_NOTIFY_CHANNEL_ID;
+	if (!channelId) return false;
+	return safeSend(client.channels.cache.get(channelId), { content, allowedMentions: { parse: [] } });
+};
+
+// httpClient가 상태코드를 버려 POST 응답만으로는 신규/기존을 구분할 수 없다.
+const register_joined_guild = async (guild) => {
+	if (await guildClient.get_guild(guild.id)) return 'existing';
+	const saved = await guildClient.create_guild(guild.id, guild.name);
+	return saved?.isDeleted ? 'deleted' : 'created';
+};
+
+const REGISTER_STATUS = {
+	created: '✅ 길드 신규 등록',
+	existing: '☑️ 이미 등록된 길드',
+	deleted: '⚠️ 삭제 처리된 길드라 웹에 보이지 않습니다. 필요하면 관리자가 복구하세요.',
+};
+
+const on_guild_join = async (client, guild) => {
+	let status;
+	try {
+		status = REGISTER_STATUS[await register_joined_guild(guild)];
+	} catch (error) {
+		// BotError는 networkUtils가 이미 남겼다.
+		if (!(error instanceof BotError)) console.error('[guildCreate] 길드 등록 실패:', error);
+		status = '❌ 길드 등록 실패 — 첫 리플 업로드 때 다시 등록됩니다.';
+	}
+	await notify(client, `📥 봇이 서버에 초대됨\n${guild_line(guild)}\n${status}`);
+};
+
+const on_guild_leave = async (client, guild) => {
+	await notify(client, `📤 봇이 서버에서 나감\n${guild_line(guild)}`);
+};
+
+const chunk_lines = (lines, limit) => {
+	const chunks = [];
+	let current = '';
+	for (const line of lines) {
+		const next = current ? `${current}\n${line}` : line;
+		if (next.length > limit && current) {
+			chunks.push(current);
+			current = line;
+		} else {
+			current = next;
+		}
+	}
+	if (current) chunks.push(current);
+	return chunks;
+};
+
+const build_daily_guild_list = (client, today) => {
+	const guilds = [...client.guilds.cache.values()]
+		.sort((a, b) => (b.memberCount ?? 0) - (a.memberCount ?? 0));
+	const lines = [`📋 ${today} 봇 사용 길드: 총 ${guilds.length}개`, ...guilds.map(guild_line)];
+	return chunk_lines(lines, MESSAGE_CONTENT_LIMIT);
+};
+
+const send_daily_guild_list = async (client) => {
+	const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+	for (const chunk of build_daily_guild_list(client, today)) {
+		if (!(await notify(client, chunk))) return;
+	}
+};
+
 module.exports = {
 	get_guilds_list,
+	on_guild_join,
+	on_guild_leave,
+	build_daily_guild_list,
+	send_daily_guild_list,
 	show_guild_list,
 	show_guild_member_list,
 	leave_discord_guild,
