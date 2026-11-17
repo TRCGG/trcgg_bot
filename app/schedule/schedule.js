@@ -1,6 +1,5 @@
 const cron = require("node-cron");
 const { safeSend } = require("../utils/discordUtils");
-const guildService = require("../services/guildService");
 const TRC_CHANNEL_ID = process.env.TRC_CHANNEL_ID;
 
 /**
@@ -10,7 +9,6 @@ const TRC_CHANNEL_ID = process.env.TRC_CHANNEL_ID;
  */
 const cronSchedule = async (client) => {
   sendMessage(client);
-  sendGuildList(client);
 };
 
 const sendMessage = async (client) => {
@@ -19,10 +17,6 @@ const sendMessage = async (client) => {
     const channel = client.channels.cache.get(TRC_CHANNEL_ID);
     await safeSend(channel, "```19:30 시작합니다. 시작 5분전에 대기해주세요.```");
   }, { timezone: "Asia/Seoul" });
-};
-
-const sendGuildList = (client) => {
-  cron.schedule("0 9 * * *", () => guildService.send_daily_guild_list(client), { timezone: "Asia/Seoul" });
 };
 
 module.exports = {

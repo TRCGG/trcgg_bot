@@ -191,42 +191,10 @@ const on_guild_leave = async (client, guild) => {
 	await notify(client, `📤 봇이 서버에서 나감\n${guild_line(guild)}`);
 };
 
-const chunk_lines = (lines, limit) => {
-	const chunks = [];
-	let current = '';
-	for (const line of lines) {
-		const next = current ? `${current}\n${line}` : line;
-		if (next.length > limit && current) {
-			chunks.push(current);
-			current = line;
-		} else {
-			current = next;
-		}
-	}
-	if (current) chunks.push(current);
-	return chunks;
-};
-
-const build_daily_guild_list = (client, today) => {
-	const guilds = [...client.guilds.cache.values()]
-		.sort((a, b) => (b.memberCount ?? 0) - (a.memberCount ?? 0));
-	const lines = [`📋 ${today} 봇 사용 길드: 총 ${guilds.length}개`, ...guilds.map(guild_line)];
-	return chunk_lines(lines, MESSAGE_CONTENT_LIMIT);
-};
-
-const send_daily_guild_list = async (client) => {
-	const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
-	for (const chunk of build_daily_guild_list(client, today)) {
-		if (!(await notify(client, chunk))) return;
-	}
-};
-
 module.exports = {
 	get_guilds_list,
 	on_guild_join,
 	on_guild_leave,
-	build_daily_guild_list,
-	send_daily_guild_list,
 	show_guild_list,
 	show_guild_member_list,
 	leave_discord_guild,

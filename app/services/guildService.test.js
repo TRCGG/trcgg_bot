@@ -240,18 +240,3 @@ test('알림의 길드 이름은 마크다운을 이스케이프한다', async (
 
   assert.match(client.sent[0].content, /\*\*\\\*\\\*굵게\\\*\\\*\*\*/);
 });
-
-test('일일 길드 목록은 인원 많은 순으로 2000자 단위로 나눠 보낸다', async () => {
-  const guilds = Array.from({ length: 40 }, (_, i) => ({ id: String(i), name: '가'.repeat(80), memberCount: i }));
-  const client = makeNotifyClient(guilds);
-
-  const chunks = guildService.build_daily_guild_list(client, '2026-11-17');
-
-  assert.ok(chunks.length > 1);
-  assert.ok(chunks.every((c) => c.length <= 2000));
-  assert.match(chunks[0], /^📋 2026-11-17 봇 사용 길드: 총 40개\n.* - 39 \(39명\)/);
-  assert.strictEqual(chunks.join('\n').split('\n').length, 41);
-
-  await withNotifyChannel(() => guildService.send_daily_guild_list(client));
-  assert.strictEqual(client.sent.length, chunks.length);
-});

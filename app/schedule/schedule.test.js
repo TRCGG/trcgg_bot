@@ -14,23 +14,18 @@ require.cache[cronPath] = {
 
 const schedule = require('./schedule');
 
-const assertRunsAt = async ({ expression, options }, hit, miss) => {
+test('내전 공지는 서버 시간대와 무관하게 한국 시간 17시에 나간다', async () => {
+  await schedule.cronSchedule({ channels: { cache: new Map() } });
+
+  assert.strictEqual(scheduled.length, 1);
+  const { expression, options } = scheduled[0];
   // 아래 시각 판정은 KST 머신에선 timezone이 없어도 통과한다.
   assert.strictEqual(options?.timezone, 'Asia/Seoul');
   const task = realCron.createTask(expression, () => {}, options);
   try {
-    assert.strictEqual(task.match(new Date(hit)), true);
-    assert.strictEqual(task.match(new Date(miss)), false);
+    assert.strictEqual(task.match(new Date('2026-11-16T08:00:00Z')), true); // KST 17:00
+    assert.strictEqual(task.match(new Date('2026-11-16T17:00:00Z')), false); // KST 02:00
   } finally {
     await task.destroy();
   }
-};
-
-test('스케줄은 서버 시간대와 무관하게 한국 시간 기준으로 나간다', async () => {
-  await schedule.cronSchedule({ channels: { cache: new Map() } });
-
-  assert.strictEqual(scheduled.length, 2);
-  // 내전 공지 KST 17:00, 길드 목록 KST 09:00
-  await assertRunsAt(scheduled[0], '2026-11-16T08:00:00Z', '2026-11-16T17:00:00Z');
-  await assertRunsAt(scheduled[1], '2026-11-16T00:00:00Z', '2026-11-16T09:00:00Z');
 });
