@@ -131,3 +131,241 @@ test('이용 불가 길드는 이름 대신 표시를 남긴다', async () => {
 
   assert.strictEqual(result, '**(이용 불가)** - 1');
 });
+
+const makeNotifyClient = (guilds = []) => {
+  const sent = [];
+  const channel = { id: 'n1', send: async (payload) => { sent.push(payload); } };
+  return {
+    sent,
+    guilds: { cache: new Map(guilds.map((g) => [g.id, g])) },
+    channels: { cache: new Map([['n1', channel]]) },
+  };
+};
+
+const withNotifyChannel = async (fn) => {
+  process.env.GUILD_NOTIFY_CHANNEL_ID = 'n1';
+  const origLog = console.log;
+  console.log = () => {};
+  try { return await fn(); } finally {
+    delete process.env.GUILD_NOTIFY_CHANNEL_ID;
+    console.log = origLog;
+  }
+};
+
+const joinedGuild = { id: '9', name: '@everyone 클랜', memberCount: 42 };
+
+const mockGuildApi = ({ getStatus, postBody }) => {
+  const requests = [];
+  global.fetch = async (url, config) => {
+    requests.push(config.method);
+    if (config.method === 'GET') {
+      return getStatus === 200
+        ? new Response(JSON.stringify({ data: dbGuild('9', '클랜') }), { status: 200 })
+        : new Response(JSON.stringify({ message: 'Guild not found' }), { status: getStatus });
+    }
+    return new Response(JSON.stringify({ data: postBody }), { status: 201 });
+  };
+  return requests;
+};
+
+test('초대되면 길드를 등록하고 멘션 없이 알림을 보낸다', async () => {
+  const requests = mockGuildApi({ getStatus: 404, postBody: dbGuild('9', '클랜') });
+  const client = makeNotifyClient();
+
+  await withNotifyChannel(() => guildService.on_guild_join(client, joinedGuild));
+
+  assert.deepStrictEqual(requests, ['GET', 'POST']);
+  assert.match(client.sent[0].content, /^`\d{2}-\d{2} \d{2}:\d{2}` 🟢 \*\*@everyone 클랜\*\* 신규 등록 · 42명 · 9$/);
+  assert.deepStrictEqual(client.sent[0].allowedMentions, { parse: [] });
+});
+
+test('이미 등록된 길드는 다시 만들지 않는다', async () => {
+  const requests = mockGuildApi({ getStatus: 200 });
+  const client = makeNotifyClient();
+
+  await withNotifyChannel(() => guildService.on_guild_join(client, joinedGuild));
+
+  assert.deepStrictEqual(requests, ['GET']);
+  // 2026-01-01T00:00Z는 KST로 같은 날 09:00이다.
+  assert.match(client.sent[0].content, /⚪ .* 다시 초대 \(등록 2026-01-01\) · 42명 · 9$/);
+});
+
+test('삭제된 길드에 다시 초대되면 되살리지 않고 알린다', async () => {
+  mockGuildApi({ getStatus: 404, postBody: { ...dbGuild('9', '클랜'), isDeleted: true } });
+  const client = makeNotifyClient();
+
+  await withNotifyChannel(() => guildService.on_guild_join(client, joinedGuild));
+
+  assert.match(client.sent[0].content, /🟡 .* 삭제된 길드 재초대 · /);
+});
+
+test('등록이 실패해도 알림은 보낸다', async () => {
+  global.fetch = async () => new Response(JSON.stringify({ message: 'boom' }), { status: 500 });
+  const client = makeNotifyClient();
+
+  await silence(() => withNotifyChannel(() => guildService.on_guild_join(client, joinedGuild)));
+
+  assert.match(client.sent[0].content, /❌ .* 등록 실패/);
+});
+
+test('알림 채널이 설정되지 않아도 등록은 하고 알림만 건너뛴다', async () => {
+  delete process.env.GUILD_NOTIFY_CHANNEL_ID;
+  const requests = mockGuildApi({ getStatus: 404, postBody: dbGuild('9', '클랜') });
+  const client = makeNotifyClient();
+
+  await silence(async () => {
+    const origLog = console.log;
+    console.log = () => {};
+    try { await guildService.on_guild_join(client, joinedGuild); } finally { console.log = origLog; }
+  });
+
+  assert.deepStrictEqual(requests, ['GET', 'POST']);
+  assert.strictEqual(client.sent.length, 0);
+});
+
+test('퇴장하면 알림만 보내고 백엔드는 호출하지 않는다', async () => {
+  const requests = mockGuildApi({ getStatus: 200 });
+  const client = makeNotifyClient();
+
+  await withNotifyChannel(() => guildService.on_guild_leave(client, joinedGuild));
+
+  assert.deepStrictEqual(requests, []);
+  assert.match(client.sent[0].content, /🔴 .* 나감 · 42명 · 9$/);
+});
+
+test('알림의 길드 이름은 마크다운을 이스케이프한다', async () => {
+  const client = makeNotifyClient();
+
+  await withNotifyChannel(() => guildService.on_guild_leave(client, { ...joinedGuild, name: '**굵게**' }));
+
+  assert.match(client.sent[0].content, /\*\*\\\*\\\*굵게\\\*\\\*\*\*/);
+});
+
+const ownedGuild = (id, ownerId) => ({ id, name: `서버${id}`, memberCount: 42, ownerId });
+
+test('같은 소유자 서버가 이미 2개면 등록하지 않고 나가며 퇴장 알림은 한 번만 보낸다', async () => {
+  const requests = mockGuildApi({ getStatus: 404, postBody: dbGuild('9', '클랜') });
+  let left = 0;
+  const joined = { ...ownedGuild('9', 'o1'), leave: async () => { left += 1; } };
+  const client = makeNotifyClient([ownedGuild('1', 'o1'), ownedGuild('2', 'o1'), joined]);
+
+  await withNotifyChannel(async () => {
+    await guildService.on_guild_join(client, joined);
+    await guildService.on_guild_leave(client, joined);
+  });
+
+  assert.strictEqual(left, 1);
+  assert.deepStrictEqual(requests, []);
+  assert.strictEqual(client.sent.length, 1);
+  assert.match(client.sent[0].content, /🚫 .* 자동 퇴장 \(같은 소유자 서버가 이미 2개\)/);
+});
+
+test('같은 소유자 서버가 1개뿐이면 정상 등록한다', async () => {
+  const requests = mockGuildApi({ getStatus: 404, postBody: dbGuild('9', '클랜') });
+  const joined = { ...ownedGuild('9', 'o1'), leave: async () => { throw new Error('나가면 안 된다'); } };
+  const client = makeNotifyClient([ownedGuild('1', 'o1'), joined]);
+
+  await withNotifyChannel(() => guildService.on_guild_join(client, joined));
+
+  assert.deepStrictEqual(requests, ['GET', 'POST']);
+  assert.match(client.sent[0].content, /신규 등록/);
+});
+
+test('봇 관리자 소유 서버는 개수 제한을 받지 않는다', async () => {
+  mockGuildApi({ getStatus: 404, postBody: dbGuild('9', '클랜') });
+  process.env.ADMIN_ID = 'admin';
+  const joined = { ...ownedGuild('9', 'admin'), leave: async () => { throw new Error('나가면 안 된다'); } };
+  const client = makeNotifyClient([ownedGuild('1', 'admin'), ownedGuild('2', 'admin'), joined]);
+
+  try {
+    await withNotifyChannel(() => guildService.on_guild_join(client, joined));
+  } finally {
+    delete process.env.ADMIN_ID;
+  }
+
+  assert.match(client.sent[0].content, /신규 등록/);
+});
+
+test('멤버 5명 미만 서버는 새로 등록하지 않고 보류한다', async () => {
+  const requests = mockGuildApi({ getStatus: 404, postBody: dbGuild('9', '클랜') });
+  const client = makeNotifyClient();
+
+  await withNotifyChannel(() => guildService.on_guild_join(client, { ...joinedGuild, memberCount: 4 }));
+
+  assert.deepStrictEqual(requests, ['GET']);
+  assert.match(client.sent[0].content, /⏸️ .* 등록 보류 \(멤버 5명 미만, 첫 리플 업로드 때 등록\) · 4명/);
+});
+
+test('멤버가 적어도 이미 등록된 길드는 다시 초대로 표시한다', async () => {
+  mockGuildApi({ getStatus: 200 });
+  const client = makeNotifyClient();
+
+  await withNotifyChannel(() => guildService.on_guild_join(client, { ...joinedGuild, memberCount: 2 }));
+
+  assert.match(client.sent[0].content, /다시 초대/);
+});
+
+test('자동 퇴장이 실패하면 실패를 알리고, 이후 퇴장 알림은 정상으로 보낸다', async () => {
+  const requests = mockGuildApi({ getStatus: 404, postBody: dbGuild('9', '클랜') });
+  const joined = { ...ownedGuild('9', 'o1'), leave: async () => { throw new Error('boom'); } };
+  const client = makeNotifyClient([ownedGuild('1', 'o1'), ownedGuild('2', 'o1'), joined]);
+
+  await silence(() => withNotifyChannel(async () => {
+    await guildService.on_guild_join(client, joined);
+    await guildService.on_guild_leave(client, joined);
+  }));
+
+  assert.deepStrictEqual(requests, []);
+  assert.strictEqual(client.sent.length, 2);
+  assert.match(client.sent[0].content, /❌ .* 자동 퇴장 실패/);
+  assert.match(client.sent[1].content, /🔴 .* 나감/);
+});
+
+test('재시도가 Unknown Guild로 실패하면 이미 나간 것으로 보고 자동 퇴장으로 알린다', async () => {
+  mockGuildApi({ getStatus: 404, postBody: dbGuild('9', '클랜') });
+  const joined = {
+    ...ownedGuild('9', 'o1'),
+    leave: async () => { throw Object.assign(new Error('Unknown Guild'), { code: 10004 }); },
+  };
+  const client = makeNotifyClient([ownedGuild('1', 'o1'), ownedGuild('2', 'o1'), joined]);
+
+  await withNotifyChannel(async () => {
+    await guildService.on_guild_join(client, joined);
+    await guildService.on_guild_leave(client, joined);
+  });
+
+  assert.strictEqual(client.sent.length, 1);
+  assert.match(client.sent[0].content, /🚫 .* 자동 퇴장/);
+});
+
+test('자동 퇴장 뒤 GuildDelete를 놓쳐도 다시 초대된 서버의 퇴장 알림은 나간다', async () => {
+  mockGuildApi({ getStatus: 404, postBody: dbGuild('9', '클랜') });
+  const joined = { ...ownedGuild('9', 'o1'), leave: async () => {} };
+
+  await withNotifyChannel(async () => {
+    await guildService.on_guild_join(makeNotifyClient([ownedGuild('1', 'o1'), ownedGuild('2', 'o1'), joined]), joined);
+    const client = makeNotifyClient([joined]);
+    await guildService.on_guild_join(client, joined);
+    await guildService.on_guild_leave(client, joined);
+    assert.match(client.sent[1].content, /🔴 .* 나감/);
+  });
+});
+
+test('멤버가 정확히 5명이면 등록한다', async () => {
+  const requests = mockGuildApi({ getStatus: 404, postBody: dbGuild('9', '클랜') });
+  const client = makeNotifyClient();
+
+  await withNotifyChannel(() => guildService.on_guild_join(client, { ...joinedGuild, memberCount: 5 }));
+
+  assert.deepStrictEqual(requests, ['GET', 'POST']);
+});
+
+test('소유자를 알 수 없는 서버는 개수 제한 없이 등록한다', async () => {
+  mockGuildApi({ getStatus: 404, postBody: dbGuild('9', '클랜') });
+  const joined = { ...ownedGuild('9', undefined), leave: async () => { throw new Error('나가면 안 된다'); } };
+  const client = makeNotifyClient([ownedGuild('1', undefined), ownedGuild('2', undefined), joined]);
+
+  await withNotifyChannel(() => guildService.on_guild_join(client, joined));
+
+  assert.match(client.sent[0].content, /신규 등록/);
+});

@@ -147,6 +147,7 @@ BASE_URL=               # 백엔드 API 베이스 URL
 DISCORD_BOT_SECRET=     # API 인증 헤더값 (x-discord-bot)
 ADMIN_ID=               # 슈퍼 어드민 Discord 사용자 ID
 TRC_CHANNEL_ID=         # 스케줄 알림 메시지 발송 채널 ID
+GUILD_NOTIFY_CHANNEL_ID= # (선택) 봇의 서버 입장·퇴장 알림을 보낼 텍스트 채널 ID (스레드·포럼 글 불가)
 NODE_ENV=               # development 설정 시 dev.gmok.kr 사용
 BOT_CALLBACK_PORT=      # (선택) 백엔드 콜백 수신 포트 (기본 19902)
 ```
