@@ -12,6 +12,7 @@ const { PermissionsBitField } = require('discord.js');
 
 const DiscordCode = {
   UNKNOWN_CHANNEL: 10003,
+  UNKNOWN_GUILD: 10004,
   UNKNOWN_MESSAGE: 10008,
   MISSING_ACCESS: 50001,
   CANNOT_SEND_DM: 50007,

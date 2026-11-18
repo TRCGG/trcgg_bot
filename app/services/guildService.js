@@ -2,7 +2,7 @@ const guildClient = require('../client/guildClient');
 const stringUtils = require('../utils/stringUtils');
 const { AttachmentBuilder, escapeMarkdown } = require('discord.js');
 const { createObjectCsvStringifier } = require('csv-writer');
-const { safeReply, safeSend } = require('../utils/discordUtils');
+const { safeReply, safeSend, DiscordCode } = require('../utils/discordUtils');
 const { BotError } = require('../utils/errors');
 
 const EMBED_DESCRIPTION_LIMIT = 4096;
@@ -171,12 +171,29 @@ const notify = async (client, content) => {
 	return safeSend(client.channels.cache.get(channelId), { content, allowedMentions: { parse: [] } });
 };
 
+// 미인증 봇은 서버 100개까지만 들어갈 수 있어, 서버를 계속 만들어 초대하면 한도가 찬다.
+const MAX_GUILDS_PER_OWNER = 2;
+const MIN_MEMBERS_TO_REGISTER = 5;
+
+// 자동 퇴장도 GuildDelete를 일으킨다. 퇴장 알림이 한 번 더 나가지 않게 표시해 둔다.
+const auto_left = new Set();
+
+const exceeds_owner_limit = (client, guild) => {
+	if (!guild.ownerId || guild.ownerId === process.env.ADMIN_ID) return false;
+	const owned = [...client.guilds.cache.values()]
+		.filter((other) => other.id !== guild.id && other.ownerId === guild.ownerId);
+	return owned.length >= MAX_GUILDS_PER_OWNER;
+};
+
 // httpClient가 상태코드를 버려 POST 응답만으로는 신규/기존을 구분할 수 없다.
 const register_joined_guild = async (guild) => {
 	const existing = await guildClient.get_guild(guild.id);
 	if (existing) {
 		const registered = existing.createDate ? ` (등록 ${to_kst(new Date(existing.createDate)).slice(0, 10)})` : '';
 		return { icon: '⚪', text: `다시 초대${registered}` };
+	}
+	if ((guild.memberCount ?? MIN_MEMBERS_TO_REGISTER) < MIN_MEMBERS_TO_REGISTER) {
+		return { icon: '⏸️', text: `등록 보류 (멤버 ${MIN_MEMBERS_TO_REGISTER}명 미만, 첫 리플 업로드 때 등록)` };
 	}
 	const saved = await guildClient.create_guild(guild.id, guild.name);
 	return saved?.isDeleted
@@ -185,6 +202,26 @@ const register_joined_guild = async (guild) => {
 };
 
 const on_guild_join = async (client, guild) => {
+	// 자동 퇴장 뒤 GuildDelete를 놓치면 표시가 남아 나중의 진짜 퇴장 알림을 삼킨다. 다시 초대되면 지운다.
+	auto_left.delete(guild.id);
+
+	if (exceeds_owner_limit(client, guild)) {
+		auto_left.add(guild.id);
+		try {
+			await guild.leave();
+		} catch (error) {
+			// 요청은 처리되고 응답만 끊기면 재시도가 Unknown Guild로 실패한다. 이때는 실제로 나간 것이다.
+			if (error?.code !== DiscordCode.UNKNOWN_GUILD && client.guilds.cache.has(guild.id)) {
+				auto_left.delete(guild.id);
+				console.error('[guildCreate] 자동 퇴장 실패:', error);
+				await notify(client, guild_alert(guild, { icon: '❌', text: '자동 퇴장 실패 (같은 소유자 서버 초과, `!길드떠나기`로 내보내세요)' }));
+				return;
+			}
+		}
+		await notify(client, guild_alert(guild, { icon: '🚫', text: `자동 퇴장 (같은 소유자 서버가 이미 ${MAX_GUILDS_PER_OWNER}개)` }));
+		return;
+	}
+
 	let status;
 	try {
 		status = await register_joined_guild(guild);
@@ -197,6 +234,7 @@ const on_guild_join = async (client, guild) => {
 };
 
 const on_guild_leave = async (client, guild) => {
+	if (auto_left.delete(guild.id)) return;
 	await notify(client, guild_alert(guild, { icon: '🔴', text: '나감' }));
 };
 
