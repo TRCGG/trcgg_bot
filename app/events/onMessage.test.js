@@ -108,6 +108,10 @@ test('리플 실패 원인별로 다른 안내를 보낸다', async () => {
     await say(new BotError('구형', 400, { type: 'unsupported-replay-version' })),
     /구형 리플 파일/,
   );
+  assert.match(
+    await say(new BotError('매칭 게임', 400, { type: 'unsupported-game-mode' })),
+    /사용자 설정 게임 리플만 등록할 수 있습니다/,
+  );
   assert.match(await say(new BotError('too large', 413)), /파일이 너무 큽니다/);
   assert.match(
     await say(new BotError('오류', 504, { type: 'discord-download-timeout' })),
@@ -153,6 +157,9 @@ test('안내로 끝나는 400만 로그를 남기지 않고 나머지는 원인�
 
   const legacy = await uploadWith(new BotError('구형', 400, { type: 'unsupported-replay-version' }));
   assert.equal(legacy.logs.length, 0, '구형 리플도 안내로 끝나는 정상 분기라 로그를 남기지 않는다');
+
+  const gameMode = await uploadWith(new BotError('매칭 게임', 400, { type: 'unsupported-game-mode' }));
+  assert.equal(gameMode.logs.length, 0, '매칭 게임 거절도 안내로 끝나는 정상 분기다');
 
   const failed = await uploadWith(new BotError('오류', 504, { type: 'discord-download-timeout' }));
   assert.equal(failed.logs.length, 1);
