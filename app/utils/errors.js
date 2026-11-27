@@ -34,6 +34,9 @@ const DISCORD_UPSTREAM_TYPES = new Set(['discord-download-timeout', 'discord-dow
 // 구형 리플(~패치 14.10) 미지원 거절 (백엔드 ProblemDetails.type)
 const UNSUPPORTED_REPLAY_VERSION_TYPE = 'unsupported-replay-version';
 
+// 칼바람·랭크 등 매칭 게임 리플 거절 (백엔드 ProblemDetails.type)
+const UNSUPPORTED_GAME_MODE_TYPE = 'unsupported-game-mode';
+
 // 백엔드 notFoundHandler — 라우트 자체가 없을 때. 본문에 요청 URL이 들어 있어 사용자에게 보이면 안 된다.
 const ROUTE_NOT_FOUND_TYPE = 'https://example.com/problems/not-found';
 
@@ -42,5 +45,6 @@ module.exports = {
   BotErrorType,
   DISCORD_UPSTREAM_TYPES,
   UNSUPPORTED_REPLAY_VERSION_TYPE,
+  UNSUPPORTED_GAME_MODE_TYPE,
   ROUTE_NOT_FOUND_TYPE,
 };

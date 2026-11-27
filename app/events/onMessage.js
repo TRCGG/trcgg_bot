@@ -1,6 +1,6 @@
 const { Events } = require("discord.js");
 const replayService = require("../services/replayService");
-const { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES, UNSUPPORTED_REPLAY_VERSION_TYPE } = require("../utils/errors");
+const { BotError, BotErrorType, DISCORD_UPSTREAM_TYPES, UNSUPPORTED_REPLAY_VERSION_TYPE, UNSUPPORTED_GAME_MODE_TYPE } = require("../utils/errors");
 const { safeReply } = require("../utils/discordUtils");
 
 // 백엔드 응답 계약은 TRC-261.
@@ -21,6 +21,9 @@ const describeReplayFailure = (error, fileName) => {
   }
   if (error.type === UNSUPPORTED_REPLAY_VERSION_TYPE) {
     return `:warning: 구형 리플 파일(패치 14.11 이전)이라 등록할 수 없습니다: ${fileName}`;
+  }
+  if (error.type === UNSUPPORTED_GAME_MODE_TYPE) {
+    return `:warning: 사용자 설정 게임 리플만 등록할 수 있습니다(칼바람·랭크 등 매칭 게임 불가): ${fileName}`;
   }
 
   switch (error.status) {
